@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
@@ -24,8 +25,17 @@ func NewServer(listenAddress string) *Server {
 // AddHandler adds an http handler to handle all subpaths of a URL prefix.
 func (s *Server) WithHandler(pathPrefix string, handler RoutedHttpHandler) *Server {
 	handler.SetPathPrefix(pathPrefix)
-	s.mux.HandleFunc(pathPrefix, errorResponseWrapper(handler))
+	s.mux.HandleFunc(pathPrefix, s.middleware(errorResponseWrapper(handler)))
 	return s
+}
+
+// TODO: Example of middleware function logging requests
+func (s *Server) middleware(fn http.HandlerFunc) http.HandlerFunc {
+	// TODO: example milleware, the log package is used as an example
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.Method, r.URL.Path)
+		fn(w, r)
+	}
 }
 
 // Run starts the HTTP server with the registered handlers. This function

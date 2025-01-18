@@ -20,6 +20,10 @@ type ECCSigner struct {
 	*ECCKeyPair
 }
 
+func (s *ECCSigner) GetAlgorithm() string {
+	return AlgoECDSA
+}
+
 func (s *ECCSigner) PublicKey() string {
 	public, _, err := s.Marshal()
 	if err != nil {

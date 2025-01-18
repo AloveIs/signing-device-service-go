@@ -13,6 +13,13 @@ const (
 )
 
 func main() {
+	server := configureServer()
+	if err := server.Run(); err != nil {
+		log.Fatal("Could not start server on ", ListenAddress)
+	}
+}
+
+func configureServer() *api.Server {
 	// create the repository (database)
 	repo := persistence.NewInMmemoryDb()
 	// configure services (business logic)
@@ -24,7 +31,5 @@ func main() {
 	server = server.WithHandler("/api/v0/health/", api.NewHealthHandler())
 	server = server.WithHandler("/api/v0/devices/", api.NewDeviceAPIHandler(deviceService))
 	// start the server
-	if err := server.Run(); err != nil {
-		log.Fatal("Could not start server on ", ListenAddress)
-	}
+	return server
 }

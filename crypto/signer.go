@@ -12,6 +12,7 @@ import (
 // Signer defines a contract for different types of signing implementations.
 type Signer interface {
 	Sign(dataToBeSigned []byte) ([]byte, error)
+	GetAlgorithm() string
 	PublicKey() string
 	//PrivateKey() string
 }
@@ -47,34 +48,4 @@ func (keys *RSAKeyPair) Sign(dataToBeSigned []byte) ([]byte, error) {
 	}
 
 	return signature, nil
-}
-
-func UnmarshalSigner(algorithm string, privateKey []byte) (MarshallableSigner, error) {
-	switch algorithm {
-	case "RSA":
-		g := NewRSAMarshaler()
-		keys, err := g.Unmarshal(privateKey)
-		return &RSASigner{RSAKeyPair: keys}, err
-	case "ECC":
-		g := NewECCMarshaler()
-		keys, err := g.Unmarshal(privateKey)
-		return &ECCSigner{ECCKeyPair: keys}, err
-	default:
-		return nil, ErrUnsupportedAlgorithm
-	}
-}
-
-func NewSigner(algorithm string) (MarshallableSigner, error) {
-	switch algorithm {
-	case "RSA":
-		g := &RSAGenerator{}
-		keys, err := g.Generate()
-		return &RSASigner{RSAKeyPair: keys}, err
-	case "ECC":
-		g := &ECCGenerator{}
-		keys, err := g.Generate()
-		return &ECCSigner{ECCKeyPair: keys}, err
-	default:
-		return nil, ErrUnsupportedAlgorithm
-	}
 }

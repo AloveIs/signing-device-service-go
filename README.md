@@ -1,6 +1,6 @@
 # Signature Service
 
-A service for managing cryptographic device signatures and message signing.
+A service for managing cryptographic signature devices and message signing.
 
 ## Key Features
 - Device management (create, list, retrieve)
@@ -17,11 +17,11 @@ A service for managing cryptographic device signatures and message signing.
 
 | Method | Endpoint                        | Description                    |
 |--------|---------------------------------|--------------------------------|
-| GET    | `/api/v0/devices/{deviceID}`    | Get device details             |
+| GET    | `/api/v0/devices/{deviceID}`    | Get retrieve a device             |
 
 | Method | Endpoint                        | Description                    |
 |--------|---------------------------------|--------------------------------|
-| POST   | `/api/v0/devices/create`        | Register a new device          |
+| POST   | `/api/v0/devices/`        | Register a new device          |
 
 | Method | Endpoint                        | Description                    |
 |--------|---------------------------------|--------------------------------|
@@ -29,8 +29,8 @@ A service for managing cryptographic device signatures and message signing.
 
 ### Health Check
 | Method | Endpoint           | Description        |
-|--------|-------------------|--------------------|
-| GET    | `/api/v0/health`  | Service heartbeat |
+|--------|--------------------|--------------------|
+| GET    | `/api/v0/health`   | Service heartbeat  |
 
 ## Running the Service
 
@@ -127,24 +127,18 @@ flowchart LR
     HTTP --> Router
 
     %% Server layer connections
-    Router --> Middleware
-    Middleware --> DeviceHandler
-    Middleware --> HealthHandler
+    Router --> DeviceHandler
+    Router --> HealthHandler
 
     %% Handler to Service connections
     DeviceHandler --> DeviceService
-    DeviceHandler --> SigningService
 
     %% Service to Repository connections
     DeviceService --> DeviceRepo
-    SigningService --> DeviceRepo
 
-    %% Styling
-    classDef layer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef component fill:#fff,stroke:#01579b,stroke-width:1px
     
     class Server,Handlers,Service,Repository layer
-    class Router,Middleware,DeviceHandler,HealthHandler,DeviceService,SigningService,DeviceRepo component
+    class Router,DeviceHandler,HealthHandler,DeviceService,SigningService,DeviceRepo component
 ```
 
 ## Design Decisions

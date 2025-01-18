@@ -17,9 +17,9 @@ func NewDeviceService(repository persistence.DeviceRepository) *DeviceService {
 	}
 }
 
-func (s *DeviceService) CreateDevice(label string, algorithm string) (common.SerializableDevice, error) {
+func (s *DeviceService) CreateDevice(algorithm string, label *string) (common.SerializableDevice, error) {
 
-	device, err := NewDevice(label, algorithm)
+	device, err := NewDevice(algorithm, label)
 	if err != nil {
 		return common.SerializableDevice{}, err
 	}

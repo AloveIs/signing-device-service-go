@@ -1,10 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -13,23 +9,27 @@ import (
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
 )
 
-// DeviceIDPattern matches a device identifier without any path segments (deviceID)
+// Matches a device identifier without any path segments (deviceID)
 var DeviceIDPattern = regexp.MustCompile("^([^/]+)$")
 
-// DeviceSigningPattern matches a device signing endpoint path (deviceID/sign)
+// Matches a device signing endpoint path (deviceID/sign)
 var DeviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
 
+// DeviceAPIHandler routes and exposes http requests
+// to the device service.
 type DeviceAPIHandler struct {
 	service *domain.DeviceService
 	Prefix  string
 }
 
+// Create a new DeviceAPIHandler using the service
 func NewDeviceAPIHandler(service *domain.DeviceService) *DeviceAPIHandler {
 	return &DeviceAPIHandler{
 		service: service,
 		Prefix:  "",
 	}
 }
+
 func (h *DeviceAPIHandler) SetPathPrefix(prefix string) {
 	h.Prefix = prefix
 }
@@ -38,6 +38,7 @@ func (handler *DeviceAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	return handler.RouteRequest(w, r)
 }
 
+// Route the http request to the correct handler.
 func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Request) error {
 	fullpath := r.URL.Path
 	relative, found := strings.CutPrefix(fullpath, handler.Prefix)
@@ -50,8 +51,8 @@ func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Req
 	// GET /
 	case r.Method == http.MethodGet && relative == "":
 		return handler.List(w, r)
-	// POST /create
-	case r.Method == http.MethodPost && relative == "create":
+	// POST /
+	case r.Method == http.MethodPost && relative == "":
 		return handler.Create(w, r)
 	// GET /{deviceID}
 	case r.Method == http.MethodGet && DeviceIDPattern.MatchString(relative):
@@ -64,96 +65,4 @@ func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Req
 	default:
 		return responses.UrlNotFoundError()
 	}
-}
-
-func (handler *DeviceAPIHandler) Retrieve(deviceID string, w http.ResponseWriter, r *http.Request) error {
-	device, err := handler.service.GetDeviceByID(deviceID)
-	if err != nil && errors.Is(err, domain.ErrDeviceNotFound) {
-		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", deviceID))
-	} else if err != nil {
-		return err
-	}
-	WriteAPIResponse(w, http.StatusOK, device)
-	return nil
-}
-
-func (handler *DeviceAPIHandler) List(w http.ResponseWriter, r *http.Request) error {
-	devices, err := handler.service.GetAllDevices()
-	if err != nil {
-		return err
-	}
-	WriteAPIResponse(w, http.StatusOK, devices)
-	return nil
-}
-
-type CreateDeviceRequest struct {
-	Label     string `json:"label"`
-	Algorithm string `json:"algorithm"`
-}
-
-func (handler *DeviceAPIHandler) Create(w http.ResponseWriter, r *http.Request) error {
-	// validate input data to be CreateDeviceRequest
-	var req CreateDeviceRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	// TODO: add values validation
-	if err != nil {
-		return responses.InvalidJSON()
-	}
-	device, err := handler.service.CreateDevice(req.Label, req.Algorithm)
-
-	if err != nil {
-		return err
-	}
-	WriteAPIResponse(w, http.StatusCreated, device)
-	return nil
-}
-
-type SignMessageRequest struct {
-	Message  *string `json:"message"`
-	IsBase64 *bool   `json:"isBase64"`
-}
-
-func (v *SignMessageRequest) GetMessageBytes() []byte {
-	if v.IsBase64 != nil && *v.IsBase64 {
-		data, _ := base64.StdEncoding.DecodeString(*v.Message)
-		// TODO: check err here!
-		return data
-	}
-	return []byte(*v.Message)
-}
-
-func (v *SignMessageRequest) Validate() map[string]string {
-	errors := make(map[string]string)
-	if v.Message == nil {
-		errors["message"] = "value is required"
-	}
-	if v.Message == nil {
-		errors["isBase64"] = "value is required"
-	}
-	return errors
-}
-
-func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r *http.Request) error {
-
-	// validate input data to be SignMessageRequest
-	var payload SignMessageRequest
-
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		return responses.InvalidJSON()
-	}
-
-	if errs := payload.Validate(); len(errs) > 0 {
-		return responses.InvalidRequestData(errs)
-	}
-	digest, err := handler.service.SignMessageWithDevice(deviceID, payload.GetMessageBytes())
-
-	if errors.Is(err, domain.ErrDeviceNotFound) {
-		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", deviceID))
-	} else if err != nil {
-		return err
-	}
-
-	WriteAPIResponse(w, http.StatusOK, digest)
-	return nil
 }

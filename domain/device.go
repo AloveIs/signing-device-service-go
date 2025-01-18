@@ -10,11 +10,12 @@ import (
 )
 
 type Device struct {
-	ID        string `json:"id"`
-	Algorithm string `json:"algorithm"`
+	ID string
+	// TODO: remove this and encapsulate it into the signer
+	//Algorithm string `json:"algorithm"`
 	// TODO: change this with the correct type
 	signer           crypto.MarshallableSigner
-	Label            string `json:"label"`
+	Label            *string
 	signatureCounter uint64
 	LastSignature    string
 }
@@ -23,23 +24,29 @@ func (d Device) ToSerializable() common.SerializableDevice {
 
 	return common.SerializableDevice{
 		ID:        d.ID,
-		Algorithm: d.Algorithm,
-		Label:     d.Label,
+		Algorithm: d.signer.GetAlgorithm(),
+		Label:     copyString(d.Label),
 		PublicKey: d.signer.PublicKey(),
 	}
+}
+
+func copyString(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	return &c
 }
 
 func DeviceFromDTO(dto common.DeviceDTO) (Device, error) {
 	var d Device
 	d.ID = dto.ID
-	d.Label = dto.Label
-	d.Algorithm = dto.Algorithm
+	d.Label = copyString(dto.Label)
 	d.signatureCounter = dto.SignatureCounter
 	d.LastSignature = dto.LastSignature
-	signer, err := crypto.UnmarshalSigner(d.Algorithm, dto.PrivateKey)
+	signer, err := UnmarshalSigner(dto.Algorithm, dto.PrivateKey)
 	if err != nil {
-		// TODO: handle this
-		panic(err)
+		return d, fmt.Errorf("Error unmarshalling DTO with algorithm %s (device ID %s): %w", dto.Algorithm, dto.ID, err)
 	}
 	d.signer = signer
 	return d, nil
@@ -56,7 +63,7 @@ func (d Device) ToDTO() common.DeviceDTO {
 	return common.DeviceDTO{
 		ID:               d.ID,
 		Label:            d.Label,
-		Algorithm:        d.Algorithm,
+		Algorithm:        d.signer.GetAlgorithm(),
 		PrivateKey:       privateKey,
 		PublicKey:        publicKey,
 		SignatureCounter: d.signatureCounter,
@@ -69,20 +76,15 @@ func generateDeviceId() string {
 	return uuid.NewString()
 }
 
-func NewDevice(label string, algorithm string) (Device, error) {
-	if len(label) == 0 {
-		return Device{}, fmt.Errorf("label cannot be empty")
-	}
-
-	signer, err := crypto.NewSigner(algorithm)
+func NewDevice(algorithm string, label *string) (Device, error) {
+	signer, err := NewSigner(algorithm)
 
 	if err != nil {
 		return Device{}, fmt.Errorf("invalid algorithm value")
 	}
 	return Device{
 		ID:               generateDeviceId(),
-		Label:            label,
-		Algorithm:        algorithm,
+		Label:            copyString(label),
 		signer:           signer,
 		signatureCounter: 0,
 	}, nil

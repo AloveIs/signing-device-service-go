@@ -8,8 +8,10 @@ type ErrorableHttpHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request) error
 }
 
+// Interface for HTTP handler that are aware of the URL prefix they
+// are served on.
 type URLPrefixHandler interface {
-	// Let the handler be aware of the possible URL prefixes
+	// Set the base prefix of the URLs served to the handler
 	SetPathPrefix(path string)
 }
 

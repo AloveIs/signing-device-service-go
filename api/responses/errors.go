@@ -11,7 +11,7 @@ type APIError struct {
 	Errors     any `json:"errors"`
 }
 
-func (e *APIError) Error() string {
+func (e APIError) Error() string {
 	return fmt.Sprintf("Api error: %d", e.StatusCode)
 }
 
@@ -22,7 +22,7 @@ func InvalidJSON() *APIError {
 	}
 }
 
-func InvalidRequestData(errors map[string]string) *APIError {
+func InvalidRequestData(errors []string) *APIError {
 	return &APIError{
 		StatusCode: http.StatusUnprocessableEntity,
 		Errors:     errors,

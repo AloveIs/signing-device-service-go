@@ -25,6 +25,10 @@ type RSASigner struct {
 	*RSAKeyPair
 }
 
+func (s *RSASigner) GetAlgorithm() string {
+	return AlgoRSA
+}
+
 func (s *RSASigner) PublicKey() string {
 	public, _, err := s.Marshal()
 	if err != nil {

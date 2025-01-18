@@ -30,7 +30,7 @@ func (imdb *InMmemoryDb) CreateDevice(device common.DeviceDTO) error {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 	deviceID := device.ID
-	// TODO: should I check for key collisions?
+	// Check key collision
 	_, has := imdb.db[deviceID]
 	if has {
 		return fmt.Errorf("invaid device, a device with the same ID found.")
@@ -43,7 +43,6 @@ func (imdb *InMmemoryDb) UpdateDevice(key string, val common.DeviceDTO) (common.
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
-	// TODO: check if previous must be returned
 	prev_val, has := imdb.db[key]
 	if has {
 		return common.DeviceDTO{}, ErrDeviceNotFound
@@ -57,7 +56,6 @@ func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn fun
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
-	// TODO: check if previous must be returned
 	device, has := imdb.db[deviceID]
 	if !has {
 		return ErrDeviceNotFound
