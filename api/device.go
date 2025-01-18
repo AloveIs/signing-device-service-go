@@ -11,7 +11,6 @@ import (
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/service"
 )
 
@@ -22,15 +21,18 @@ var DeviceIDPattern = regexp.MustCompile("^([^/]+)$")
 var DeviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
 
 type DeviceAPIHandler struct {
-	service *service.DeviceBusinessLogicService
+	service *service.DeviceService
 	Prefix  string
 }
 
-func NewDeviceAPIHandler(prefix string, db persistence.DeviceRepository) *DeviceAPIHandler {
+func NewDeviceAPIHandler(service *service.DeviceService) *DeviceAPIHandler {
 	return &DeviceAPIHandler{
-		service: service.NewDeviceBusinessLogicService(db),
-		Prefix:  prefix,
+		service: service,
+		Prefix:  "",
 	}
+}
+func (h *DeviceAPIHandler) SetPathPrefix(prefix string) {
+	h.Prefix = prefix
 }
 
 func (handler *DeviceAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {

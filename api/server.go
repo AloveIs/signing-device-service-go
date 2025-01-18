@@ -4,50 +4,52 @@ import (
 	"net/http"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
 )
 
 // Server manages HTTP requests and dispatches them to the appropriate services.
 type Server struct {
 	listenAddress string
-	repo          persistence.DeviceRepository
+	mux           *http.ServeMux
 }
 
-// NewServer is a factory to instantiate a new Server.
-func NewServer(listenAddress string, deviceRepository persistence.DeviceRepository) *Server {
+// NewServer is a factory to instantiate a new Server. Pass the addess is
+// a string pair "address:port"
+func NewServer(listenAddress string) *Server {
 	return &Server{
 		listenAddress: listenAddress,
-		repo:          deviceRepository,
+		mux:           http.NewServeMux(),
 	}
 }
 
-// errorResponseWrapper takes an ErrorableHttpHandler and returns a standard http.HandlerFunc.
-// It wraps the handler to properly format and write any errors that occur during request processing.
-// If the handler returns an APIError, it will be formatted accordingly, otherwise a generic internal error is returned.
-func errorResponseWrapper(handler ErrorableHttpHandler) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := handler.ServeHTTP(w, r)
-		if err == nil {
-			return
-		}
-		if apiErr, ok := err.(responses.APIError); ok {
-			// Write the api error formatted
-			WriteErrorResponse(w, apiErr.StatusCode, apiErr.Errors)
-		} else {
-			// Write a geneal error so not to leak errors information
-			WriteInternalError(w)
-		}
-	}
+// AddHandler adds an http handler to handle all subpaths of a URL prefix.
+func (s *Server) WithHandler(pathPrefix string, handler RoutedHttpHandler) *Server {
+	handler.SetPathPrefix(pathPrefix)
+	s.mux.HandleFunc(pathPrefix, errorResponseWrapper(handler))
+	return s
 }
 
-// Run registers all HandlerFuncs for the existing HTTP routes and starts the Server.
+// Run starts the HTTP server with the registered handlers. This function
+// is blocking.
 func (s *Server) Run() error {
-	mux := http.NewServeMux()
-	healthHandler := &HealthHandler{}
-	deviceAPIHandler := NewDeviceAPIHandler("/api/v0/devices/", s.repo)
-	// TODO: make it more DRY so not to repeat the path prefix
-	mux.HandleFunc("/api/v0/health", errorResponseWrapper(healthHandler))
-	mux.HandleFunc(deviceAPIHandler.Prefix, errorResponseWrapper(deviceAPIHandler))
+	return http.ListenAndServe(s.listenAddress, s.mux)
+}
 
-	return http.ListenAndServe(s.listenAddress, mux)
+// errorResponseWrapper wraps an ErrorableHttpHandler to handle error responses,
+// returning APIError with proper formatting or a generic internal error.
+func errorResponseWrapper(handler ErrorableHttpHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := handler.ServeHTTP(w, r); err != nil {
+			handleError(w, err)
+		}
+	}
+}
+
+func handleError(w http.ResponseWriter, err error) {
+	switch e := err.(type) {
+	case *responses.APIError:
+		WriteErrorResponse(w, e.StatusCode, e.Errors)
+	default:
+		// TODO: add logging here to store internal errors
+		WriteInternalError(w)
+	}
 }

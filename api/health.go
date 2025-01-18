@@ -14,6 +14,10 @@ type HealthResponse struct {
 type HealthHandler struct {
 }
 
+func NewHealthHandler() *HealthHandler {
+	return &HealthHandler{}
+}
+
 // Health evaluates the health of the service and writes a standardized response.
 func (h *HealthHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) error {
 	if request.Method != http.MethodGet {
@@ -26,3 +30,7 @@ func (h *HealthHandler) ServeHTTP(response http.ResponseWriter, request *http.Re
 	WriteAPIResponse(response, http.StatusOK, health)
 	return nil
 }
+
+// Ignore the prefix, needed to implement the RoutedHttpHandler interface
+// TODO: remove this and improve the builder pattern on Server to accept different interfaces
+func (h *HealthHandler) SetPathPrefix(path string) {}

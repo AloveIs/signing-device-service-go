@@ -1,5 +1,6 @@
 package persistence
 
-import "fmt"
+import "errors"
 
-var ErrDeviceNotFound = fmt.Errorf("device not found in the database")
+// TODO: probably replace with a boolean as a return type for the repository
+var ErrDeviceNotFound = errors.New("device not found [model]")

@@ -1,5 +1,7 @@
 package domain
 
-import "fmt"
+import (
+	"errors"
+)
 
-var ErrDeviceNotFound = fmt.Errorf("Device not found.")
+var ErrDeviceNotFound = errors.New("Device not found [business]")

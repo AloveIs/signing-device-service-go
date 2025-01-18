@@ -7,35 +7,40 @@ import (
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
 )
 
-type DeviceBusinessLogicService struct {
+type DeviceService struct {
 	repo persistence.DeviceRepository
 }
 
-func NewDeviceBusinessLogicService(repository persistence.DeviceRepository) *DeviceBusinessLogicService {
-	return &DeviceBusinessLogicService{
+func NewDeviceService(repository persistence.DeviceRepository) *DeviceService {
+	return &DeviceService{
 		repo: repository,
 	}
 }
 
-func (s *DeviceBusinessLogicService) CreateDevice(label string, algorithm string) (domain.Device, error) {
+func (s *DeviceService) CreateDevice(label string, algorithm string) (domain.Device, error) {
 
-	device := domain.NewDevice(label, algorithm)
-	// TODO: add error for wrong algorithm/valdiation
-	err := s.repo.CreateDevice(device)
-
+	device, err := domain.NewDevice(label, algorithm)
+	if err != nil {
+		return device, err
+	}
+	err = s.repo.CreateDevice(device)
 	if err != nil {
 		return domain.Device{}, err
 	}
 	return device, nil
 }
 
-func (s *DeviceBusinessLogicService) GetAllDevices() ([]domain.Device, error) {
+func (s *DeviceService) GetAllDevices() ([]domain.Device, error) {
 	return s.repo.ListDevices()
 }
 
-func (s *DeviceBusinessLogicService) GetDeviceByID(deviceID string) (domain.Device, error) {
+func (s *DeviceService) GetDeviceByID(deviceID string) (domain.Device, error) {
 
-	return s.repo.GetDeviceByID(deviceID)
+	device, err := s.repo.GetDeviceByID(deviceID)
+	if errors.Is(err, persistence.ErrDeviceNotFound) {
+		return device, domain.ErrDeviceNotFound
+	}
+	return device, nil
 }
 
 type SignedMessageDigest struct {
@@ -43,13 +48,8 @@ type SignedMessageDigest struct {
 	SignedData string
 }
 
-func NewDeviceService(repository persistence.DeviceRepository) *DeviceBusinessLogicService {
-	return &DeviceBusinessLogicService{
-		repo: repository,
-	}
-}
-
-func (s *DeviceBusinessLogicService) SignMessageWithDevice(deviceID string, message []byte) (SignedMessageDigest, error) {
+func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (SignedMessageDigest, error) {
+	// TODO: make the result capture more elegant, e.g. add a result interface{} as second argument of updateFn
 	var signature string
 	var signedData string
 	err := s.repo.TransactionalUpdateDevice(deviceID, func(device *domain.Device) error {
@@ -61,7 +61,7 @@ func (s *DeviceBusinessLogicService) SignMessageWithDevice(deviceID string, mess
 		}
 		return nil
 	})
-	if errors.Is(persistence.ErrDeviceNotFound, err) {
+	if errors.Is(err, persistence.ErrDeviceNotFound) {
 		return SignedMessageDigest{}, domain.ErrDeviceNotFound
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/service"
 )
 
 const (
@@ -12,11 +13,17 @@ const (
 )
 
 func main() {
-	// create the database
+	// create the repository (database)
 	repo := persistence.NewInMmemoryDb()
+	// configure services (business logic)
+	deviceService := service.NewDeviceService(repo)
 
-	server := api.NewServer(ListenAddress, repo)
-
+	// configure the http server
+	server := api.NewServer(ListenAddress)
+	// create, configure and assign handlers to routes
+	server = server.WithHandler("/api/v0/health/", api.NewHealthHandler())
+	server = server.WithHandler("/api/v0/devices/", api.NewDeviceAPIHandler(deviceService))
+	// start the server
 	if err := server.Run(); err != nil {
 		log.Fatal("Could not start server on ", ListenAddress)
 	}
