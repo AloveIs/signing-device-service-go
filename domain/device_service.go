@@ -10,12 +10,14 @@ import (
 // Serivce exposing all the business logic operations regarding device managment
 // and signing.
 type DeviceService struct {
-	repo persistence.DeviceRepository
+	deviceRepo    persistence.DeviceRepository
+	signatureRepo persistence.SignatureRepository
 }
 
-func NewDeviceService(repository persistence.DeviceRepository) *DeviceService {
+func NewDeviceService(devices persistence.DeviceRepository, signatures persistence.SignatureRepository) *DeviceService {
 	return &DeviceService{
-		repo: repository,
+		deviceRepo:    devices,
+		signatureRepo: signatures,
 	}
 }
 
@@ -28,7 +30,7 @@ func (s *DeviceService) CreateDevice(algorithm string, label *string) (common.De
 	if err != nil {
 		return common.Device{}, err
 	}
-	err = s.repo.CreateDevice(device.ToDTO())
+	err = s.deviceRepo.CreateDevice(device.ToDTO())
 	if err != nil {
 		return common.Device{}, err
 	}
@@ -36,7 +38,7 @@ func (s *DeviceService) CreateDevice(algorithm string, label *string) (common.De
 }
 
 func (s *DeviceService) GetAllDevices() ([]common.Device, error) {
-	DTOdevices, err := s.repo.ListDevices()
+	DTOdevices, err := s.deviceRepo.ListDevices()
 	if err != nil {
 		return nil, err
 	}
@@ -56,50 +58,57 @@ func (s *DeviceService) GetAllDevices() ([]common.Device, error) {
 // If the device is not found ErrDeviceNotFound is returned.
 func (s *DeviceService) GetDeviceByID(deviceID string) (common.Device, error) {
 
-	deviceDTO, err := s.repo.GetDeviceByID(deviceID)
-	if err != nil && errors.Is(err, persistence.ErrDeviceNotFound) {
+	deviceDTO, err := s.deviceRepo.GetDeviceByID(deviceID)
+	if err != nil && errors.Is(err, persistence.ErrNotFound) {
 		return common.Device{}, ErrDeviceNotFound
 	} else if err != nil {
 		return common.Device{}, err
 	}
 	device, err := deviceFromDTO(deviceDTO)
-	if err != nil && errors.Is(err, persistence.ErrDeviceNotFound) {
+	if err != nil && errors.Is(err, persistence.ErrNotFound) {
 		return common.Device{}, ErrDeviceNotFound
 	}
 	return device.ToSerializable(), nil
 }
 
-type SignedMessageDigest struct {
-	Signature  string
-	SignedData string
-}
-
 // SignMessageWithDevice signs a message using the device identified by deviceID.
 // Returns the signature and signed data, or ErrDeviceNotFound if the device does not exist.
-func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (SignedMessageDigest, error) {
+func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (common.Signature, error) {
 	// TODO: make the signature result capture more elegant, e.g. add a result interface{} as second argument of updateFn
-	var signature string
-	var signedData string
-	err := s.repo.TransactionalUpdateDevice(deviceID, func(deviceDTO *common.DeviceDTO) error {
+	var signatureDTO common.SignatureDTO
+	err := s.deviceRepo.TransactionalUpdateDevice(deviceID, func(deviceDTO *common.DeviceDTO) error {
 		var err error
 		device, err := deviceFromDTO(*deviceDTO)
 		if err != nil {
 			return err
 		}
-		signature, signedData, err = device.Sign(message)
+		signature, signedData, err := device.Sign(message)
 
+		if err != nil {
+			return err
+		}
+		// store the signature
+		signatureDTO = common.SignatureDTO{
+			DeviceID:   device.ID,
+			Signature:  signature,
+			SignedData: signedData,
+		}
+		// TODO this can cause deadlock if the interplay between the two inmemory db gets more complicated (there are 2 independent mutexes)
+		err = s.signatureRepo.SaveSignature(signatureDTO)
+
+		if err != nil {
+			return err
+		}
+		// update and device and store it
 		*deviceDTO = device.ToDTO()
 		if err != nil {
 			return err
 		}
 		return nil
 	})
-	if errors.Is(err, persistence.ErrDeviceNotFound) {
-		return SignedMessageDigest{}, ErrDeviceNotFound
+	if errors.Is(err, persistence.ErrNotFound) {
+		return common.Signature{}, ErrDeviceNotFound
 	}
 
-	return SignedMessageDigest{
-		Signature:  signature,
-		SignedData: signedData,
-	}, nil
+	return signatureDTO.ToSignature(), nil
 }

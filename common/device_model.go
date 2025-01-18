@@ -6,7 +6,8 @@ type Device struct {
 	ID        string  `json:"id"`
 	Algorithm string  `json:"algorithm"`
 	Label     *string `json:"label"`
-	PublicKey string  `json:"public_key"`
+	// TODO: check if public key needs to be sent to the client for local verification
+	PublicKey string `json:"-"`
 }
 
 // DTO for the device for communicating with the persistence layer

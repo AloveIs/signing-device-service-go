@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
 )
@@ -20,14 +21,15 @@ type signatureDestructed struct {
 }
 
 // createTestServiceInstance creates a new in-memory database and device service for testing
-func createTestServiceInstance() (persistence.DeviceRepository, *domain.DeviceService) {
-	db := persistence.NewInMmemoryDb()
-	return db, domain.NewDeviceService(db)
+func createTestServiceInstance() *domain.DeviceService {
+	deviceDb := persistence.NewInMmemoryDb()
+	signatureDb := persistence.NewInMemorySignatureDb()
+	return domain.NewDeviceService(deviceDb, signatureDb)
 }
 
 // TestCRUDOperations verifies basic Create, Read operations for devices
 func TestCRUDOperations(t *testing.T) {
-	_, deviceService := createTestServiceInstance()
+	deviceService := createTestServiceInstance()
 
 	// Verify initial state has no devices
 	devices, err := deviceService.GetAllDevices()
@@ -58,7 +60,7 @@ func TestCRUDOperations(t *testing.T) {
 // TestSignature verifies the signing functionality works correctly
 // and proper errors are returned for invalid devices
 func TestSignature(t *testing.T) {
-	_, deviceService := createTestServiceInstance()
+	deviceService := createTestServiceInstance()
 
 	// Create a test device
 	createdDevice, err := deviceService.CreateDevice("RSA", nil)
@@ -86,11 +88,11 @@ func TestSignature(t *testing.T) {
 // TestConcurrentUsers verifies that signatures remain consistent
 // when multiple users are signing messages simultaneously
 func TestConcurrentUsers(t *testing.T) {
-	_, deviceService := createTestServiceInstance()
+	deviceService := createTestServiceInstance()
 	N := 10000
 
 	// Create channel to collect signature results
-	channel := make(chan domain.SignedMessageDigest, N)
+	channel := make(chan common.Signature, N)
 
 	// Create test device
 	createdDevice, err := deviceService.CreateDevice("RSA", nil)
@@ -142,7 +144,7 @@ func TestConcurrentUsers(t *testing.T) {
 // TestSequentialSign verifies that signatures remain consistent
 // when signing messages sequentially
 func TestSequentialSign(t *testing.T) {
-	_, deviceService := createTestServiceInstance()
+	deviceService := createTestServiceInstance()
 	N := 10000
 
 	createdDevice, err := deviceService.CreateDevice("RSA", nil)

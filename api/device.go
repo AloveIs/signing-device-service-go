@@ -10,10 +10,10 @@ import (
 )
 
 // Matches a device identifier without any path segments (deviceID)
-var DeviceIDPattern = regexp.MustCompile("^([^/]+)$")
+var deviceIDPattern = regexp.MustCompile("^([^/]+)$")
 
 // Matches a device signing endpoint path (deviceID/sign)
-var DeviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
+var deviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
 
 // DeviceAPIHandler routes and exposes http requests
 // to the device service.
@@ -55,12 +55,12 @@ func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Req
 	case r.Method == http.MethodPost && relative == "":
 		return handler.Create(w, r)
 	// GET /{deviceID}
-	case r.Method == http.MethodGet && DeviceIDPattern.MatchString(relative):
-		deviceID := DeviceIDPattern.FindStringSubmatch(relative)[1]
+	case r.Method == http.MethodGet && deviceIDPattern.MatchString(relative):
+		deviceID := deviceIDPattern.FindStringSubmatch(relative)[1]
 		return handler.Retrieve(deviceID, w, r)
 	// POST /{deviceID}/sign
-	case r.Method == http.MethodPost && DeviceSigningPattern.MatchString(relative):
-		deviceID := DeviceSigningPattern.FindStringSubmatch(relative)[1]
+	case r.Method == http.MethodPost && deviceSigningPattern.MatchString(relative):
+		deviceID := deviceSigningPattern.FindStringSubmatch(relative)[1]
 		return handler.Sign(deviceID, w, r)
 	default:
 		return responses.UrlNotFoundError()

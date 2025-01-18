@@ -20,16 +20,22 @@ func main() {
 }
 
 func configureServer() *api.Server {
-	// create the repository (database)
-	repo := persistence.NewInMmemoryDb()
+	// create the repositories (database)
+	deviceRepo := persistence.NewInMmemoryDb()
+	signatureRepo := persistence.NewInMemorySignatureDb()
+
 	// configure services (business logic)
-	deviceService := domain.NewDeviceService(repo)
+	deviceService := domain.NewDeviceService(deviceRepo, signatureRepo)
+	signatureService := domain.NewSignatureService(signatureRepo)
 
 	// configure the http server
 	server := api.NewServer(ListenAddress)
+
 	// create, configure and assign handlers to routes
 	server = server.WithHandler("/api/v0/health/", api.NewHealthHandler())
 	server = server.WithHandler("/api/v0/devices/", api.NewDeviceAPIHandler(deviceService))
+	server = server.WithHandler("/api/v0/signatures/", api.NewSignatureAPIHandler(signatureService))
+
 	// start the server
 	return server
 }

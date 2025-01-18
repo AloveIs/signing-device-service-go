@@ -21,7 +21,7 @@ func (imdb *InMmemoryDb) GetDeviceByID(deviceID string) (common.DeviceDTO, error
 
 	val, has := imdb.db[deviceID]
 	if !has {
-		return common.DeviceDTO{}, ErrDeviceNotFound
+		return common.DeviceDTO{}, ErrNotFound
 	}
 	return val, nil
 }
@@ -45,7 +45,7 @@ func (imdb *InMmemoryDb) UpdateDevice(key string, val common.DeviceDTO) (common.
 
 	prev_val, has := imdb.db[key]
 	if has {
-		return common.DeviceDTO{}, ErrDeviceNotFound
+		return common.DeviceDTO{}, ErrNotFound
 	}
 	imdb.db[key] = val
 
@@ -58,7 +58,7 @@ func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn fun
 
 	device, has := imdb.db[deviceID]
 	if !has {
-		return ErrDeviceNotFound
+		return ErrNotFound
 	}
 	if err := updateFn(&device); err != nil {
 		return err
