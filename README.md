@@ -1,84 +1,167 @@
-# Signature Service - Coding Challenge
+# Signature Service
 
-## Instructions
+A service for managing cryptographic device signatures and message signing.
 
-This challenge is part of the software engineering interview process at fiskaly.
+## Key Features
+- Device management (create, list, retrieve)
+- Message signing with registered devices
+- RESTful API with JSON responses
+- Containerized deployment support
 
-If you see this challenge, you've passed the first round of interviews and are now at the second and last stage.
+## API Reference
 
-We would like you to attempt the challenge below. You will then be able to discuss your solution in the skill-fit interview with two of our colleagues from the development department.
+### Device Management
+| Method | Endpoint                        | Description                    |
+|--------|---------------------------------|--------------------------------|
+| GET    | `/api/v0/devices`               | List all registered devices    |
 
-The quality of your code is more important to us than the quantity.
+| Method | Endpoint                        | Description                    |
+|--------|---------------------------------|--------------------------------|
+| GET    | `/api/v0/devices/{deviceID}`    | Get device details             |
 
-### Project Setup
+| Method | Endpoint                        | Description                    |
+|--------|---------------------------------|--------------------------------|
+| POST   | `/api/v0/devices/create`        | Register a new device          |
 
-For the challenge, we provide you with:
+| Method | Endpoint                        | Description                    |
+|--------|---------------------------------|--------------------------------|
+| POST   | `/api/v0/devices/{deviceID}/sign`| Sign a message using device   |
 
-- Go project containing the setup
-- Basic API structure and functionality
-- Encoding / decoding of different key types (only needed to serialize keys to a persistent storage)
-- Key generation algorithms (ECC, RSA)
-- Library to generate UUIDs, included in `go.mod`
+### Health Check
+| Method | Endpoint           | Description        |
+|--------|-------------------|--------------------|
+| GET    | `/api/v0/health`  | Service heartbeat |
 
-You can use these things as a foundation, but you're also free to modify them as you see fit.
+## Running the Service
 
-### Prerequisites & Tooling
+The service can be run locally with:
 
-- Golang (v1.20+)
-
-### The Challenge
-
-The goal is to implement an API service that allows customers to create `signature devices` with which they can sign arbitrary transaction data.
-
-#### Domain Description
-
-The `signature service` can manage multiple `signature devices`. Such a device is identified by a unique identifier (e.g. UUID). For now you can pretend there is only one user / organization using the system (e.g. a dedicated node for them), therefore you do not need to think about user management at all.
-
-When creating the `signature device`, the client of the API has to choose the signature algorithm that the device will be using to sign transaction data. During the creation process, a new key pair (`public key` & `private key`) has to be generated and assigned to the device.
-
-The `signature device` should also have a `label` that can be used to display it in the UI and a `signature_counter` that tracks how many signatures have been created with this device. The `label` is provided by the user. The `signature_counter` shall only be modified internally.
-
-##### Signature Creation
-
-For the signature creation, the client will have to provide `data_to_be_signed` through the API. In order to increase the security of the system, we will extend this raw data with the current `signature_counter` and the `last_signature`.
-
-The resulting string (`secured_data_to_be_signed`) should follow this format: `<signature_counter>_<data_to_be_signed>_<last_signature_base64_encoded>`
-
-In the base case there is no `last_signature` (= `signature_counter == 0`). Use the `base64`-encoded device ID (`last_signature = base64(device.id)`) instead of the `last_signature`.
-
-This special string will be signed (`Signer.sign(secured_data_to_be_signed)`) and the resulting signature (`base64` encoded) will be returned to the client. The signature response could look like this:
-
-```json
-{ 
-    "signature": <signature_base64_encoded>,
-    "signed_data": "<signature_counter>_<data_to_be_signed>_<last_signature_base64_encoded>"
-}
+```bash
+go run main.go
 ```
 
-After the signature has been created, the signature counter's value has to be incremented (`signature_counter += 1`).
+Or using docker:
 
-#### API
+```bash
+# Build the image
+docker build -t signature-device-service:latest -f Dockerfile .
+# Run the container
+docker run --rm signature-device-service:latest
+```
 
-For now we need to provide two main operations to our customers:
+The service will start on port `8080`.
 
-- `CreateSignatureDevice(id: string, algorithm: 'ECC' | 'RSA', [optional]: label: string): CreateSignatureDeviceResponse`
-- `SignTransaction(deviceId: string, data: string): SignatureResponse`
+## Testing
 
-Think of how to expose these operations through a RESTful HTTP-based API.
+Both unit and integration testing are performed using the go's testing primitives. 
+ - `domain/service_test.go`: tests business logic to adhere to the specifications
+ - `main_test.go`: end-to-end testing for performing integration testing.   
 
-In addition, `list / retrieval operations` for the resources generated in the previous operations should be made available to the customers.
 
-#### QA / Testing
+Run the tests locally with:
 
-As we are in the business of compliance technology, we need to make sure that our implementation is verifiably correct. Think of an automatable way to assure the correctness (in this challenge: adherence to the specifications) of the system.
+```bash
+go test ./...
+```
 
-#### Technical Constraints & Considerations
+Or using docker:
 
-- The system will be used by many concurrent clients accessing the same resources.
-- The `signature_counter` has to be strictly monotonically increasing and ideally without any gaps.
-- The system currently only supports `RSA` and `ECDSA` as signature algorithms. Try to design the signing mechanism in a way that allows easy extension to other algorithms without changing the core domain logic.
-- For now it is enough to store signature devices in memory. Efficiency is not a priority for this. In the future we might want to scale out. As you design your storage logic, keep in mind that we may later want to switch to a relational database.
+```bash
+# Build test image
+docker build -t signature-device-service-test:latest -f Dockerfile.test .
+# Run tests
+docker run --rm signature-device-service-test:latest
+```
 
-#### Credits
+## Architecture
 
-This challenge is heavily influenced by the regulations for `KassenSichV` (Germany) as well as the `RKSV` (Austria) and our solutions for them.
+The service follows a layered architecture pattern:
+
+1. Server Layer
+   - HTTP server and routing
+   - Middleware management
+   - Request handling
+
+2. Handler Layer
+   - API endpoint handlers
+   - Request/response processing
+   - Input validation
+
+3. Service Layer
+   - Business logic implementation
+   - Core functionality
+
+4. Repository Layer
+   - Data persistence
+   - Storage interface
+
+
+```mermaid
+flowchart LR
+    subgraph Client["External Clients"]
+        HTTP["HTTP Requests"]
+    end
+
+    subgraph Server["Server Layer"]
+        Router["HTTP Router"]
+        direction TB
+    end
+
+    subgraph Handlers["Handler Layer"]
+        DeviceHandler["Device Handler"]
+        HealthHandler["Health Handler"]
+        direction TB
+    end
+
+    subgraph Service["Service Layer"]
+        DeviceService["Device Service"]
+        direction TB
+    end
+
+    subgraph Repository["Repository Layer"]
+        DeviceRepo["Device Repository"]
+        direction TB
+    end
+
+    %% External connections
+    HTTP --> Router
+
+    %% Server layer connections
+    Router --> Middleware
+    Middleware --> DeviceHandler
+    Middleware --> HealthHandler
+
+    %% Handler to Service connections
+    DeviceHandler --> DeviceService
+    DeviceHandler --> SigningService
+
+    %% Service to Repository connections
+    DeviceService --> DeviceRepo
+    SigningService --> DeviceRepo
+
+    %% Styling
+    classDef layer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef component fill:#fff,stroke:#01579b,stroke-width:1px
+    
+    class Server,Handlers,Service,Repository layer
+    class Router,Middleware,DeviceHandler,HealthHandler,DeviceService,SigningService,DeviceRepo component
+```
+
+## Design Decisions
+
+The service prioritizes:
+- Scalability for future business logic expansion
+- Code maintainability and readability
+- Test-friendly architecture
+- Clean separation of concerns
+- Minimal external dependencies
+
+## Improvements and Limitations
+
+For transparency, the following features are not currently implemented:
+- Comprehensive tests and full coverage 
+- Context (`context.Context`) propagation in business logic
+- Timeout logic and errors where external services are called
+- Comprehensive error wrapping and logging
+- Configuration the service via CLI parameters
+- Other limitations/improvement are expressed using `TODO` in comments
