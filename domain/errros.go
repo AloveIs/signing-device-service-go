@@ -4,4 +4,4 @@ import (
 	"errors"
 )
 
-var ErrDeviceNotFound = errors.New("Device not found [business]")
+var ErrDeviceNotFound = errors.New("Device not found")

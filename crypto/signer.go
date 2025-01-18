@@ -12,6 +12,14 @@ import (
 // Signer defines a contract for different types of signing implementations.
 type Signer interface {
 	Sign(dataToBeSigned []byte) ([]byte, error)
+	PublicKey() string
+	//PrivateKey() string
+}
+
+type MarshallableSigner interface {
+	Signer
+	Marshal() ([]byte, []byte, error)
+	//Unmarshal(data []byte) (Signer, error)
 }
 
 // computeHash calculates the SHA-256 hash of the input data
@@ -41,14 +49,31 @@ func (keys *RSAKeyPair) Sign(dataToBeSigned []byte) ([]byte, error) {
 	return signature, nil
 }
 
-func NewSigner(algorithm string) (Signer, error) {
+func UnmarshalSigner(algorithm string, privateKey []byte) (MarshallableSigner, error) {
+	switch algorithm {
+	case "RSA":
+		g := NewRSAMarshaler()
+		keys, err := g.Unmarshal(privateKey)
+		return &RSASigner{RSAKeyPair: keys}, err
+	case "ECC":
+		g := NewECCMarshaler()
+		keys, err := g.Unmarshal(privateKey)
+		return &ECCSigner{ECCKeyPair: keys}, err
+	default:
+		return nil, ErrUnsupportedAlgorithm
+	}
+}
+
+func NewSigner(algorithm string) (MarshallableSigner, error) {
 	switch algorithm {
 	case "RSA":
 		g := &RSAGenerator{}
-		return g.Generate()
+		keys, err := g.Generate()
+		return &RSASigner{RSAKeyPair: keys}, err
 	case "ECC":
 		g := &ECCGenerator{}
-		return g.Generate()
+		keys, err := g.Generate()
+		return &ECCSigner{ECCKeyPair: keys}, err
 	default:
 		return nil, ErrUnsupportedAlgorithm
 	}

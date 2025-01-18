@@ -20,6 +20,23 @@ func NewRSAMarshaler() RSAMarshaler {
 	return RSAMarshaler{}
 }
 
+type RSASigner struct {
+	*RSAMarshaler
+	*RSAKeyPair
+}
+
+func (s *RSASigner) PublicKey() string {
+	public, _, err := s.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return string(public)
+}
+
+func (s *RSASigner) Marshal() ([]byte, []byte, error) {
+	return s.RSAMarshaler.Marshal(*s.RSAKeyPair)
+}
+
 // Marshal takes an RSAKeyPair and encodes it to be written on disk.
 // It returns the public and the private key as a byte slice.
 func (m *RSAMarshaler) Marshal(keyPair RSAKeyPair) ([]byte, []byte, error) {

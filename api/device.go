@@ -11,7 +11,6 @@ import (
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/service"
 )
 
 // DeviceIDPattern matches a device identifier without any path segments (deviceID)
@@ -21,11 +20,11 @@ var DeviceIDPattern = regexp.MustCompile("^([^/]+)$")
 var DeviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
 
 type DeviceAPIHandler struct {
-	service *service.DeviceService
+	service *domain.DeviceService
 	Prefix  string
 }
 
-func NewDeviceAPIHandler(service *service.DeviceService) *DeviceAPIHandler {
+func NewDeviceAPIHandler(service *domain.DeviceService) *DeviceAPIHandler {
 	return &DeviceAPIHandler{
 		service: service,
 		Prefix:  "",
@@ -70,7 +69,7 @@ func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Req
 func (handler *DeviceAPIHandler) Retrieve(deviceID string, w http.ResponseWriter, r *http.Request) error {
 	device, err := handler.service.GetDeviceByID(deviceID)
 	if err != nil && errors.Is(err, domain.ErrDeviceNotFound) {
-		return responses.NewAPIError(http.StatusNotFound, fmt.Errorf("device %s not found", deviceID))
+		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", deviceID))
 	} else if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r 
 	digest, err := handler.service.SignMessageWithDevice(deviceID, payload.GetMessageBytes())
 
 	if errors.Is(err, domain.ErrDeviceNotFound) {
-		return responses.NewAPIError(http.StatusNotFound, fmt.Errorf("device %s not found", deviceID))
+		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", deviceID))
 	} else if err != nil {
 		return err
 	}

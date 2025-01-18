@@ -15,6 +15,23 @@ type ECCKeyPair struct {
 // ECCMarshaler can encode and decode an ECC key pair.
 type ECCMarshaler struct{}
 
+type ECCSigner struct {
+	*ECCMarshaler
+	*ECCKeyPair
+}
+
+func (s *ECCSigner) PublicKey() string {
+	public, _, err := s.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return string(public)
+}
+
+func (s *ECCSigner) Marshal() ([]byte, []byte, error) {
+	return s.ECCMarshaler.Marshal(*s.ECCKeyPair)
+}
+
 // NewECCMarshaler creates a new ECCMarshaler.
 func NewECCMarshaler() ECCMarshaler {
 	return ECCMarshaler{}
@@ -22,7 +39,7 @@ func NewECCMarshaler() ECCMarshaler {
 
 // Encode takes an ECCKeyPair and encodes it to be written on disk.
 // It returns the public and the private key as a byte slice.
-func (m ECCMarshaler) Encode(keyPair ECCKeyPair) ([]byte, []byte, error) {
+func (m ECCMarshaler) Marshal(keyPair ECCKeyPair) ([]byte, []byte, error) {
 	privateKeyBytes, err := x509.MarshalECPrivateKey(keyPair.Private)
 	if err != nil {
 		return nil, nil, err
@@ -47,7 +64,7 @@ func (m ECCMarshaler) Encode(keyPair ECCKeyPair) ([]byte, []byte, error) {
 }
 
 // Decode assembles an ECCKeyPair from an encoded private key.
-func (m ECCMarshaler) Decode(privateKeyBytes []byte) (*ECCKeyPair, error) {
+func (m ECCMarshaler) Unmarshal(privateKeyBytes []byte) (*ECCKeyPair, error) {
 	block, _ := pem.Decode(privateKeyBytes)
 	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/service"
 )
 
 const (
@@ -16,7 +16,7 @@ func main() {
 	// create the repository (database)
 	repo := persistence.NewInMmemoryDb()
 	// configure services (business logic)
-	deviceService := service.NewDeviceService(repo)
+	deviceService := domain.NewDeviceService(repo)
 
 	// configure the http server
 	server := api.NewServer(ListenAddress)

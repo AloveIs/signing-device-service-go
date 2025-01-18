@@ -4,29 +4,29 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
 )
 
 type InMmemoryDb struct {
 	// RWMutex to emulate atomicity of the database
 	rwmutex sync.RWMutex
 	// Storage method is a map deviceID:device
-	db map[string]domain.Device
+	db map[string]common.DeviceDTO
 }
 
-func (imdb *InMmemoryDb) GetDeviceByID(deviceID string) (domain.Device, error) {
+func (imdb *InMmemoryDb) GetDeviceByID(deviceID string) (common.DeviceDTO, error) {
 
 	imdb.rwmutex.RLock()
 	defer imdb.rwmutex.RUnlock()
 
 	val, has := imdb.db[deviceID]
 	if !has {
-		return domain.Device{}, ErrDeviceNotFound
+		return common.DeviceDTO{}, ErrDeviceNotFound
 	}
 	return val, nil
 }
 
-func (imdb *InMmemoryDb) CreateDevice(device domain.Device) error {
+func (imdb *InMmemoryDb) CreateDevice(device common.DeviceDTO) error {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 	deviceID := device.ID
@@ -39,21 +39,21 @@ func (imdb *InMmemoryDb) CreateDevice(device domain.Device) error {
 	return nil
 }
 
-func (imdb *InMmemoryDb) UpdateDevice(key string, val domain.Device) (domain.Device, error) {
+func (imdb *InMmemoryDb) UpdateDevice(key string, val common.DeviceDTO) (common.DeviceDTO, error) {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
 	// TODO: check if previous must be returned
 	prev_val, has := imdb.db[key]
 	if has {
-		return domain.Device{}, ErrDeviceNotFound
+		return common.DeviceDTO{}, ErrDeviceNotFound
 	}
 	imdb.db[key] = val
 
 	return prev_val, nil
 }
 
-func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn func(device *domain.Device) error) error {
+func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn func(device *common.DeviceDTO) error) error {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
@@ -71,12 +71,12 @@ func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn fun
 	return nil
 }
 
-func (imdb *InMmemoryDb) ListDevices() ([]domain.Device, error) {
+func (imdb *InMmemoryDb) ListDevices() ([]common.DeviceDTO, error) {
 	imdb.rwmutex.RLock()
 	defer imdb.rwmutex.RUnlock()
 
 	recordsCount := len(imdb.db)
-	result := make([]domain.Device, 0, recordsCount)
+	result := make([]common.DeviceDTO, 0, recordsCount)
 
 	for _, record := range imdb.db {
 		result = append(result, record)
@@ -86,6 +86,6 @@ func (imdb *InMmemoryDb) ListDevices() ([]domain.Device, error) {
 
 func NewInMmemoryDb() DeviceRepository {
 	return &InMmemoryDb{
-		db: make(map[string]domain.Device),
+		db: make(map[string]common.DeviceDTO),
 	}
 }

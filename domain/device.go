@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/crypto"
 	"github.com/google/uuid"
 )
@@ -12,10 +13,55 @@ type Device struct {
 	ID        string `json:"id"`
 	Algorithm string `json:"algorithm"`
 	// TODO: change this with the correct type
-	signer           crypto.Signer
+	signer           crypto.MarshallableSigner
 	Label            string `json:"label"`
 	signatureCounter uint64
 	LastSignature    string
+}
+
+func (d Device) ToSerializable() common.SerializableDevice {
+
+	return common.SerializableDevice{
+		ID:        d.ID,
+		Algorithm: d.Algorithm,
+		Label:     d.Label,
+		PublicKey: d.signer.PublicKey(),
+	}
+}
+
+func DeviceFromDTO(dto common.DeviceDTO) (Device, error) {
+	var d Device
+	d.ID = dto.ID
+	d.Label = dto.Label
+	d.Algorithm = dto.Algorithm
+	d.signatureCounter = dto.SignatureCounter
+	d.LastSignature = dto.LastSignature
+	signer, err := crypto.UnmarshalSigner(d.Algorithm, dto.PrivateKey)
+	if err != nil {
+		// TODO: handle this
+		panic(err)
+	}
+	d.signer = signer
+	return d, nil
+}
+
+func (d Device) ToDTO() common.DeviceDTO {
+	publicKey, privateKey, err := d.signer.Marshal()
+
+	if err != nil {
+		// TODO: handle this
+		panic(err)
+	}
+
+	return common.DeviceDTO{
+		ID:               d.ID,
+		Label:            d.Label,
+		Algorithm:        d.Algorithm,
+		PrivateKey:       privateKey,
+		PublicKey:        publicKey,
+		SignatureCounter: d.signatureCounter,
+		LastSignature:    d.LastSignature,
+	}
 }
 
 func generateDeviceId() string {
@@ -23,22 +69,23 @@ func generateDeviceId() string {
 	return uuid.NewString()
 }
 
-func NewDevice(label string, algorithm string) Device {
-	// TODO: validate label
+func NewDevice(label string, algorithm string) (Device, error) {
+	if len(label) == 0 {
+		return Device{}, fmt.Errorf("label cannot be empty")
+	}
+
 	signer, err := crypto.NewSigner(algorithm)
 
 	if err != nil {
-		// TODO: handle this
-		panic(err)
+		return Device{}, fmt.Errorf("invalid algorithm value")
 	}
-	// TODO: validate Algorithm
 	return Device{
 		ID:               generateDeviceId(),
 		Label:            label,
 		Algorithm:        algorithm,
 		signer:           signer,
 		signatureCounter: 0,
-	}
+	}, nil
 }
 
 func (d *Device) composeDataToBeSigned(dataToSign []byte) string {
