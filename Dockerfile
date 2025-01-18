@@ -12,7 +12,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/main .
 
 # Runner container base image
-FROM alpine:edge
+FROM scratch
 
 WORKDIR /app
 

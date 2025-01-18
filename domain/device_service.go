@@ -5,6 +5,7 @@ import (
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"github.com/google/uuid"
 )
 
 // Serivce exposing all the business logic operations regarding device managment
@@ -89,6 +90,8 @@ func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (
 		}
 		// store the signature
 		signatureDTO = common.SignatureDTO{
+			// TODO: move the construction inside a business logic function
+			ID:         uuid.NewString(),
 			DeviceID:   device.ID,
 			Signature:  signature,
 			SignedData: signedData,
