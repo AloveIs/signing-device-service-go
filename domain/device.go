@@ -9,20 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type Device struct {
+// Structure representing a signature device and its business logic
+type signatureDevice struct {
 	ID string
-	// TODO: remove this and encapsulate it into the signer
-	//Algorithm string `json:"algorithm"`
-	// TODO: change this with the correct type
+	// TODO: change this name
 	signer           crypto.MarshallableSigner
 	Label            *string
 	signatureCounter uint64
 	LastSignature    string
 }
 
-func (d Device) ToSerializable() common.SerializableDevice {
+func (d *signatureDevice) ToSerializable() common.Device {
 
-	return common.SerializableDevice{
+	return common.Device{
 		ID:        d.ID,
 		Algorithm: d.signer.GetAlgorithm(),
 		Label:     copyString(d.Label),
@@ -38,8 +37,8 @@ func copyString(s *string) *string {
 	return &c
 }
 
-func DeviceFromDTO(dto common.DeviceDTO) (Device, error) {
-	var d Device
+func deviceFromDTO(dto common.DeviceDTO) (signatureDevice, error) {
+	var d signatureDevice
 	d.ID = dto.ID
 	d.Label = copyString(dto.Label)
 	d.signatureCounter = dto.SignatureCounter
@@ -52,7 +51,7 @@ func DeviceFromDTO(dto common.DeviceDTO) (Device, error) {
 	return d, nil
 }
 
-func (d Device) ToDTO() common.DeviceDTO {
+func (d signatureDevice) ToDTO() common.DeviceDTO {
 	publicKey, privateKey, err := d.signer.Marshal()
 
 	if err != nil {
@@ -76,13 +75,13 @@ func generateDeviceId() string {
 	return uuid.NewString()
 }
 
-func NewDevice(algorithm string, label *string) (Device, error) {
+func newDevice(algorithm string, label *string) (signatureDevice, error) {
 	signer, err := NewSigner(algorithm)
 
 	if err != nil {
-		return Device{}, fmt.Errorf("invalid algorithm value")
+		return signatureDevice{}, fmt.Errorf("invalid algorithm value")
 	}
-	return Device{
+	return signatureDevice{
 		ID:               generateDeviceId(),
 		Label:            copyString(label),
 		signer:           signer,
@@ -90,7 +89,7 @@ func NewDevice(algorithm string, label *string) (Device, error) {
 	}, nil
 }
 
-func (d *Device) composeDataToBeSigned(dataToSign []byte) string {
+func (d *signatureDevice) composeDataToBeSigned(dataToSign []byte) string {
 	// encode message to b64
 	dataToSignB64 := base64.StdEncoding.EncodeToString(dataToSign)
 
@@ -101,7 +100,7 @@ func (d *Device) composeDataToBeSigned(dataToSign []byte) string {
 	return fmt.Sprintf("%d_%s_%s", d.signatureCounter, dataToSignB64, d.LastSignature)
 }
 
-func (d *Device) Sign(dataToSign []byte) (string, string, error) {
+func (d *signatureDevice) Sign(dataToSign []byte) (string, string, error) {
 
 	securedData := d.composeDataToBeSigned(dataToSign)
 
