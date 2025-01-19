@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/AloveIs/signing-device-service-go/api"
 	"github.com/AloveIs/signing-device-service-go/common"
@@ -22,6 +23,11 @@ func TestMain(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+	// TODO: add more features to the server to know when it started
+	// wait for the server to start
+	<-time.After(time.Millisecond * 500)
+
+	// N is the number of clients
 	N := 1
 	wg := &sync.WaitGroup{}
 	// emulate N users accessing the API
