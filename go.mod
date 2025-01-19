@@ -1,4 +1,4 @@
-module github.com/fiskaly/coding-challenges/signing-service-challenge
+module github.com/AloveIs/signing-device-service-go
 
 go 1.20
 

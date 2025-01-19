@@ -6,6 +6,7 @@ import (
 )
 
 // TODO: make this its own struct to be consistent
+
 var ErrDeviceNotFound = errors.New("device not found")
 var ErrSignatureNotFound = errors.New("signature not found")
 

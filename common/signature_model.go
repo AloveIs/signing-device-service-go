@@ -1,6 +1,7 @@
 package common
 
-// Signature represents a digital signature created by a device
+// Signature represents a signature created using a device
+// It is meant to be serialized toe xternal services
 type Signature struct {
 	ID         string `json:"id"`
 	DeviceID   string `json:"device_id"`

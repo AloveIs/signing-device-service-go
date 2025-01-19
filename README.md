@@ -91,6 +91,7 @@ curl -X POST 'http://localhost:8080/api/v0/devices/' \
 
 <details>
 <summary>Show example</summary>
+
 ```bash
 curl -X POST 'http://localhost:8080/api/v0/devices/e770900e-004e-4a59-9e99-b388184e0c3f/sign' \
 --header 'Content-Type: application/json' \
@@ -167,7 +168,7 @@ curl -X POST 'http://localhost:8080/api/v0/devices/e770900e-004e-4a59-9e99-b3881
 
 ## Running the Service
 
-The service can be run locally with:
+The service runs on port `8080` and can be lanched locally with: 
 
 ```bash
 go run main.go
@@ -182,13 +183,13 @@ docker build -t signature-device-service:latest -f Dockerfile .
 docker run --rm -p 8080:8080 signature-device-service:latest
 ```
 
-The service will start on port `8080`.
 
 ## Testing
 
 Both unit and integration testing are performed using the go's testing primitives. 
- - `domain/device_service_test.go`: tests business logic to adhere to the specifications
- - `main_test.go`: end-to-end testing for performing integration testing.   
+ - `domain/device_service_test.go`: tests that the business logic adheres to the specifications
+ - `main_test.go`: end-to-end testing for performing integration testing with http requests made by the client
+ - Testing other deployment layers (like proxies load balancer etc...) can be done by makeing the same requests on a testing produciton instance  
 
 
 Run the tests locally with:
@@ -213,10 +214,10 @@ The service follows a layered architecture pattern:
 1. Server Layer
    - HTTP server and routing
    - Middleware management
-   - Request handling
+   - API handler routing
 
 2. Handler Layer
-   - API endpoint handlers
+   - Routing and handling API endpoint  
    - Request/response processing
    - Input validation
 
@@ -281,6 +282,8 @@ flowchart LR
     class Router,DeviceHandler,HealthHandler,DeviceService,SigningService,DeviceRepo component
 ```
 
+This layered architecture allows to split the and test each component easiliy by mocking all its dependency.
+
 ## Design Decisions
 
 The service prioritizes:
@@ -297,5 +300,6 @@ For transparency, the following features are not currently implemented:
 - Context (`context.Context`) propagation in business logic
 - Timeout logic and errors where external services are called
 - Comprehensive error wrapping and logging
+- Cybersecurity  
 - Configuration the service via CLI parameters
 - Other limitations/improvement are expressed using `TODO` in comments

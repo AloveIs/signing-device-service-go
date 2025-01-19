@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
 // DeviceRepository handles CRUD operations for devices

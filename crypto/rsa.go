@@ -1,9 +1,12 @@
 package crypto
 
 import (
+	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 )
 
 // RSAKeyPair is a DTO that holds RSA private and public keys.
@@ -12,33 +15,28 @@ type RSAKeyPair struct {
 	Private *rsa.PrivateKey
 }
 
+// Sign data with the key
+func (keys *RSAKeyPair) Sign(dataToBeSigned []byte) ([]byte, error) {
+
+	hash := computeHash(dataToBeSigned)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, keys.Private, crypto.SHA256, hash[:])
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to sign data with RSA: %v", err)
+	}
+
+	return signature, nil
+}
+
+func (s *RSAKeyPair) GetAlgorithm() string {
+	return AlgoRSA
+}
+
 // RSAMarshaler can encode and decode an RSA key pair.
 type RSAMarshaler struct{}
 
 // NewRSAMarshaler creates a new RSAMarshaler.
 func NewRSAMarshaler() RSAMarshaler {
 	return RSAMarshaler{}
-}
-
-type RSASigner struct {
-	*RSAMarshaler
-	*RSAKeyPair
-}
-
-func (s *RSASigner) GetAlgorithm() string {
-	return AlgoRSA
-}
-
-func (s *RSASigner) PublicKey() string {
-	public, _, err := s.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return string(public)
-}
-
-func (s *RSASigner) Marshal() ([]byte, []byte, error) {
-	return s.RSAMarshaler.Marshal(*s.RSAKeyPair)
 }
 
 // Marshal takes an RSAKeyPair and encodes it to be written on disk.

@@ -3,9 +3,11 @@ package persistence
 import (
 	"sync"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
+// InMemoryDeviceDb implements an in-memory database for storing device records
+// using a map with read-write mutex for concurrent access control
 type InMemoryDeviceDb struct {
 	// RWMutex to emulate atomicity of the database
 	rwmutex sync.RWMutex

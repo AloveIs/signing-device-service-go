@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
 // Test that TransactionalUpdateDevice does not cause race condtions between goroutines

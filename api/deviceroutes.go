@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
+	"github.com/AloveIs/signing-device-service-go/api/responses"
+	"github.com/AloveIs/signing-device-service-go/domain"
 )
 
+// Retrieve a device by its ID
 func (handler *DeviceAPIHandler) Retrieve(deviceID string, w http.ResponseWriter, r *http.Request) error {
 	device, err := handler.service.GetDeviceByID(deviceID)
 	if err != nil && errors.Is(err, domain.ErrDeviceNotFound) {
@@ -22,6 +23,7 @@ func (handler *DeviceAPIHandler) Retrieve(deviceID string, w http.ResponseWriter
 	return nil
 }
 
+// List all devices
 func (handler *DeviceAPIHandler) List(w http.ResponseWriter, r *http.Request) error {
 	devices, err := handler.service.GetAllDevices()
 	if err != nil {
@@ -31,11 +33,14 @@ func (handler *DeviceAPIHandler) List(w http.ResponseWriter, r *http.Request) er
 	return nil
 }
 
+// Intermediate data type to parse a the request data for creating a device
 type CreateDeviceRequest struct {
 	Label     *string `json:"label"`
 	Algorithm string  `json:"algorithm"`
 }
 
+// Validate checks that the CreateDeviceRequest has all the required fields.
+// Returns a list of human readable error messages.
 func (v *CreateDeviceRequest) Validate() []string {
 	errors := make([]string, 0)
 	if len(v.Algorithm) == 0 {
@@ -48,6 +53,7 @@ func (v *CreateDeviceRequest) Validate() []string {
 	return nil
 }
 
+// Create a new device. The request must contain a CreateDeviceRequest.
 func (handler *DeviceAPIHandler) Create(w http.ResponseWriter, r *http.Request) error {
 	// validate input data to be CreateDeviceRequest
 	var req CreateDeviceRequest
@@ -57,9 +63,7 @@ func (handler *DeviceAPIHandler) Create(w http.ResponseWriter, r *http.Request) 
 		return responses.InvalidJSON()
 	}
 
-	errs := req.Validate()
-
-	if len(errs) > 0 {
+	if errs := req.Validate(); len(errs) > 0 {
 		return responses.InvalidRequestData(errs)
 	}
 
@@ -76,6 +80,7 @@ func (handler *DeviceAPIHandler) Create(w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
+// Intermediate data type to parse a the request data for signing a message
 type SignMessageRequest struct {
 	Message  *string `json:"message"`
 	IsBase64 *bool   `json:"isBase64"`
@@ -90,6 +95,9 @@ func (v *SignMessageRequest) getMessageBytes() []byte {
 	return []byte(*v.Message)
 }
 
+// Validate checks that the CreateDeviceRequest has all the required fields and
+// that the message can be correctly interpreted.
+// Returns a list of human readable error messages.
 func (v *SignMessageRequest) Validate() ([]byte, []string) {
 	errors := make([]string, 0)
 	if v.Message == nil {
@@ -110,6 +118,7 @@ func (v *SignMessageRequest) Validate() ([]byte, []string) {
 	return v.getMessageBytes(), nil
 }
 
+// Sign a message using the device defined by deviceID. The request must contain a SignMessageRequest.
 func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r *http.Request) error {
 
 	// validate input data to be SignMessageRequest
@@ -123,7 +132,7 @@ func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r 
 	if len(errs) != 0 {
 		return responses.InvalidRequestData(errs)
 	}
-	digest, err := handler.service.SignMessageWithDevice(deviceID, messageBytes)
+	signature, err := handler.service.SignMessageWithDevice(deviceID, messageBytes)
 
 	if errors.Is(err, domain.ErrDeviceNotFound) {
 		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", deviceID))
@@ -131,6 +140,6 @@ func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r 
 		return err
 	}
 
-	WriteAPIResponse(w, http.StatusCreated, digest)
+	WriteAPIResponse(w, http.StatusCreated, signature)
 	return nil
 }

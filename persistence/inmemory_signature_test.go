@@ -3,7 +3,7 @@ package persistence
 import (
 	"testing"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
 // TestSignatureCreateListRetrieve tests the core functionality of the signature database:

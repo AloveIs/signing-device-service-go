@@ -3,9 +3,10 @@ package domain
 import (
 	"testing"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/crypto"
+	"github.com/AloveIs/signing-device-service-go/crypto"
 )
 
+// Test that the signature counter gets incremented by one each time
 func TestSignatureDeviceSignatureCounter(t *testing.T) {
 	// Create original device
 	signDevice, err := newDevice("RSA", nil)
@@ -23,7 +24,7 @@ func TestSignatureDeviceSignatureCounter(t *testing.T) {
 	for i := 0; i < N; i++ {
 
 		// Sign something to change the counter
-		_, _, err = signDevice.Sign([]byte("test message"))
+		_, _, err = signDevice.sign([]byte("test message"))
 		if err != nil {
 			t.Fatalf("Failed to sign message: %v", err)
 		}
@@ -35,6 +36,7 @@ func TestSignatureDeviceSignatureCounter(t *testing.T) {
 	}
 }
 
+// Test that both RSA and ECSDA algorithms are supported
 func TestSignatureDeviceAlgorithms(t *testing.T) {
 	algorithms := []string{crypto.AlgoRSA, crypto.AlgoECDSA}
 
@@ -52,7 +54,7 @@ func TestSignatureDeviceAlgorithms(t *testing.T) {
 			}
 
 			// Test signing
-			_, _, err = device.Sign([]byte("test message"))
+			_, _, err = device.sign([]byte("test message"))
 			if err != nil {
 				t.Errorf("Failed to sign with %s algorithm: %v", algo, err)
 			}

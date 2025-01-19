@@ -7,10 +7,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
+	"github.com/AloveIs/signing-device-service-go/api/responses"
+	"github.com/AloveIs/signing-device-service-go/domain"
 )
 
+// Matches path /{signature_id}
 var signatureIDPattern = regexp.MustCompile("^([^/]+)$")
 
 func (h *SignatureAPIHandler) SetPathPrefix(prefix string) {
@@ -43,6 +44,7 @@ func (handler *SignatureAPIHandler) RouteRequest(w http.ResponseWriter, r *http.
 	}
 }
 
+// Retrieve a signature by its signatureID
 func (handler *SignatureAPIHandler) Retrieve(signatureID string, w http.ResponseWriter, r *http.Request) error {
 	signature, err := handler.service.GetSignatureByID(signatureID)
 	if err != nil && errors.Is(err, domain.ErrSignatureNotFound) {
@@ -54,6 +56,7 @@ func (handler *SignatureAPIHandler) Retrieve(signatureID string, w http.Response
 	return nil
 }
 
+// List all signatures
 func (handler *SignatureAPIHandler) List(w http.ResponseWriter, r *http.Request) error {
 	signatures, err := handler.service.ListSignatures()
 	if err != nil {

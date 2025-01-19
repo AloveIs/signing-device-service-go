@@ -4,21 +4,60 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/crypto"
+	"github.com/AloveIs/signing-device-service-go/common"
+	"github.com/AloveIs/signing-device-service-go/crypto"
 	"github.com/google/uuid"
 )
 
-// Structure representing a signature device and its business logic
+// signatureDevice represents a signature device and its business logic
+// it is meant to be used only inside this package
 type signatureDevice struct {
+	// Unique identifier
 	ID string
-	// TODO: change this name
-	signer           crypto.MarshallableSigner
-	Label            *string
+	// signer is the object that can sign a message
+	signer crypto.MarshallableSigner
+	// label is an optional alternative name for the device
+	Label *string
+	// counter of the number of signature performed
 	signatureCounter uint64
-	LastSignature    string
+	// last signature performed
+	LastSignature string
 }
 
+// Create a new signature device from and algorithm and an optional label
+func newDevice(algorithm string, label *string) (signatureDevice, error) {
+	signer, err := newSigner(algorithm)
+
+	if err != nil {
+		return signatureDevice{}, fmt.Errorf("invalid algorithm value")
+	}
+	return signatureDevice{
+		ID:               generateDeviceId(),
+		Label:            copyString(label),
+		signer:           signer,
+		signatureCounter: 0,
+	}, nil
+}
+
+// Sign a message and return its signature
+// returns the signature, the data signed and an error
+func (d *signatureDevice) sign(dataToSign []byte) (string, string, error) {
+
+	securedData := d.composeDataToBeSigned(dataToSign)
+
+	signature, err := d.signer.Sign([]byte(securedData))
+
+	if err != nil {
+		return "", "", err
+	}
+
+	d.signatureCounter++
+	d.LastSignature = base64.StdEncoding.EncodeToString([]byte(signature))
+
+	return d.LastSignature, securedData, nil
+}
+
+// Convert a device into a DTO that can be exposed to outside ervices
 func (d *signatureDevice) ToSerializable() common.Device {
 
 	return common.Device{
@@ -29,21 +68,14 @@ func (d *signatureDevice) ToSerializable() common.Device {
 	}
 }
 
-func copyString(s *string) *string {
-	if s == nil {
-		return nil
-	}
-	c := *s
-	return &c
-}
-
+// Unmarshal a device from its DTO representation
 func deviceFromDTO(dto common.DeviceDTO) (signatureDevice, error) {
 	var d signatureDevice
 	d.ID = dto.ID
 	d.Label = copyString(dto.Label)
 	d.signatureCounter = dto.SignatureCounter
 	d.LastSignature = dto.LastSignature
-	signer, err := UnmarshalSigner(dto.Algorithm, dto.PrivateKey)
+	signer, err := unmarshalSigner(dto.Algorithm, dto.PrivateKey)
 	if err != nil {
 		return d, fmt.Errorf("Error unmarshalling DTO with algorithm %s (device ID %s): %w", dto.Algorithm, dto.ID, err)
 	}
@@ -51,7 +83,8 @@ func deviceFromDTO(dto common.DeviceDTO) (signatureDevice, error) {
 	return d, nil
 }
 
-func (d signatureDevice) ToDTO() common.DeviceDTO {
+// Marshall a deviec into its DTO
+func (d signatureDevice) toDTO() common.DeviceDTO {
 	publicKey, privateKey, err := d.signer.Marshal()
 
 	if err != nil {
@@ -75,20 +108,6 @@ func generateDeviceId() string {
 	return uuid.NewString()
 }
 
-func newDevice(algorithm string, label *string) (signatureDevice, error) {
-	signer, err := NewSigner(algorithm)
-
-	if err != nil {
-		return signatureDevice{}, fmt.Errorf("invalid algorithm value")
-	}
-	return signatureDevice{
-		ID:               generateDeviceId(),
-		Label:            copyString(label),
-		signer:           signer,
-		signatureCounter: 0,
-	}, nil
-}
-
 func (d *signatureDevice) composeDataToBeSigned(dataToSign []byte) string {
 	// encode message to b64
 	dataToSignB64 := base64.StdEncoding.EncodeToString(dataToSign)
@@ -100,18 +119,10 @@ func (d *signatureDevice) composeDataToBeSigned(dataToSign []byte) string {
 	return fmt.Sprintf("%d_%s_%s", d.signatureCounter, dataToSignB64, d.LastSignature)
 }
 
-func (d *signatureDevice) Sign(dataToSign []byte) (string, string, error) {
-
-	securedData := d.composeDataToBeSigned(dataToSign)
-
-	signature, err := d.signer.Sign([]byte(securedData))
-
-	if err != nil {
-		return "", "", err
+func copyString(s *string) *string {
+	if s == nil {
+		return nil
 	}
-
-	d.signatureCounter++
-	d.LastSignature = base64.StdEncoding.EncodeToString([]byte(signature))
-
-	return d.LastSignature, securedData, nil
+	c := *s
+	return &c
 }

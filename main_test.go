@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/api"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
 func TestErrorMessages(t *testing.T) {
@@ -28,36 +28,38 @@ func TestMain(t *testing.T) {
 	for i := 0; i < N; i++ {
 		wg.Add(1)
 		go func() {
+			// TODO: this test needs should add more test cases
 			testNonExistingUrl(t)
-			testListDevices(t, 0)
+			testListDevices(t, []common.Device{})
 			deviceA := testCreateDevice(t)
 			deviceB := testCreateDevice(t)
-			testListDevices(t, 2)
-			testListSignatures(t, 0)
-			testSignMessage(t, deviceA)
-			testSignMessage(t, deviceB)
-			testListSignatures(t, 2)
-			// TODO: test retrieve
-			// TODO: test error messages
+			testListDevices(t, []common.Device{deviceA, deviceB})
+			testListSignatures(t, []common.Signature{})
+			sigA := testSignMessage(t, deviceA)
+			sigB := testSignMessage(t, deviceB)
+			testListSignatures(t, []common.Signature{sigA, sigB})
+			// test retrieve
+			testRetrieveSignature(t, sigA)
+			testRetrieveDevice(t, deviceA)
+			// test error messages
+			testRetrieveDeviceFailure(t, "IMPOSSIBLE_DEVICE_ID")
+			testRetrieveSignatureFailure(t, "IMPOSSIBLE_DEVICE_ID")
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 }
 
-func testListDevices(t *testing.T, expected int) {
+func testListDevices(t *testing.T, expected []common.Device) {
 	resp, err := http.Get("http://localhost:8080/api/v0/devices")
 	if err != nil {
 		t.Errorf("List devices failed: %v", err)
 	}
-	// Check the response body
+	// Check the response statusCode
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status OK, got %v", resp.StatusCode)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status OK, got %v", resp.StatusCode)
-	}
 	// Decode the response body
 	var response struct {
 		Data []common.Device `json:"data"`
@@ -67,8 +69,89 @@ func testListDevices(t *testing.T, expected int) {
 	}
 	devices := response.Data
 
-	if len(devices) != expected {
-		t.Errorf("Expected %v devices, got %v", expected, len(devices))
+	if len(devices) != len(expected) {
+		t.Errorf("Expected %v devices, got %v", len(expected), len(devices))
+	}
+
+	idSet := make(map[string]struct{})
+	for _, device := range expected {
+		idSet[device.ID] = struct{}{}
+	}
+
+	for _, device := range devices {
+		if _, ok := idSet[device.ID]; !ok {
+			t.Errorf("Unexpected device ID: %v", device.ID)
+		}
+	}
+}
+
+func testRetrieveDevice(t *testing.T, expected common.Device) {
+	resp, err := http.Get("http://localhost:8080/api/v0/devices/" + expected.ID)
+	if err != nil {
+		t.Errorf("List devices failed: %v", err)
+	}
+	// Check the response statusCode
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK, got %v", resp.StatusCode)
+	}
+
+	// Decode the response body
+	var response struct {
+		Data common.Device `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		t.Errorf("Failed to decode response body: %v", err)
+	}
+	device := response.Data
+
+	if device != expected {
+		t.Errorf("Expected %v ==  %v", device, expected)
+	}
+}
+
+func testRetrieveSignature(t *testing.T, expected common.Signature) {
+	resp, err := http.Get("http://localhost:8080/api/v0/signatures/" + expected.ID)
+	if err != nil {
+		t.Errorf("Retrieve signature failed: %v", err)
+	}
+	// Check the response status code
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK, got %v", resp.StatusCode)
+	}
+	// Decode the response body
+	var response struct {
+		Data common.Signature `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		t.Errorf("Failed to decode response body: %v", err)
+	}
+	signature := response.Data
+
+	if signature != expected {
+		t.Errorf("Expected %v ==  %v", signature, expected)
+	}
+
+}
+
+func testRetrieveDeviceFailure(t *testing.T, deviceId string) {
+	resp, err := http.Get("http://localhost:8080/api/v0/devices/" + deviceId)
+	if err != nil {
+		t.Errorf("List devices failed: %v", err)
+	}
+	// Check the response statusCode
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status Not Found, got %v", resp.StatusCode)
+	}
+}
+
+func testRetrieveSignatureFailure(t *testing.T, signatureId string) {
+	resp, err := http.Get("http://localhost:8080/api/v0/signatures/" + signatureId)
+	if err != nil {
+		t.Errorf("List devices failed: %v", err)
+	}
+	// Check the response statusCode
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status Not Found, got %v", resp.StatusCode)
 	}
 }
 
@@ -104,7 +187,7 @@ func testSignMessage(t *testing.T, device common.Device) common.Signature {
 
 // Get the list of signatures and test if the expected length is correct
 // TODO: add test to check the IDs match the created one
-func testListSignatures(t *testing.T, expected int) {
+func testListSignatures(t *testing.T, expected []common.Signature) {
 	resp, err := http.Get("http://localhost:8080/api/v0/signatures")
 	if err != nil {
 		t.Errorf("List devices failed: %v", err)
@@ -122,8 +205,19 @@ func testListSignatures(t *testing.T, expected int) {
 	}
 	signatures := response.Data
 
-	if len(signatures) != expected {
-		t.Errorf("Expected %v signatures, got %v", expected, len(signatures))
+	if len(signatures) != len(expected) {
+		t.Errorf("Expected %v signatures, got %v", len(expected), len(signatures))
+	}
+
+	idSet := make(map[string]struct{})
+	for _, signature := range expected {
+		idSet[signature.ID] = struct{}{}
+	}
+
+	for _, signature := range signatures {
+		if _, ok := idSet[signature.ID]; !ok {
+			t.Errorf("Unexpected signature ID: %v", signature.ID)
+		}
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
+	"github.com/AloveIs/signing-device-service-go/api/responses"
 )
 
 // Server manages HTTP requests and dispatches them to the appropriate services.
@@ -39,7 +39,7 @@ func (s *Server) middleware(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 // Run starts the HTTP server with the registered handlers. This function
-// is blocking.
+// blocks the caller until the server stops.
 func (s *Server) Run() error {
 	return http.ListenAndServe(s.listenAddress, s.mux)
 }

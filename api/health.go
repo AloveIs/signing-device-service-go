@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
+	"github.com/AloveIs/signing-device-service-go/api/responses"
 )
 
 type HealthResponse struct {

@@ -3,12 +3,16 @@ package persistence
 import (
 	"sync"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+	"github.com/AloveIs/signing-device-service-go/common"
 )
 
+// InMemorySignatureDb implements an in-memory database for storing signature records
+// using a map with read-write mutex for concurrent access control
 type InMemorySignatureDb struct {
+	// RWMutex to emulate atomicity of the database
 	rwmutex sync.RWMutex
-	db      map[string]common.SignatureDTO
+	// Storage method is a map signatureID:signature
+	db map[string]common.SignatureDTO
 }
 
 func (db *InMemorySignatureDb) SaveSignature(signature common.SignatureDTO) error {

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"github.com/AloveIs/signing-device-service-go/common"
+	"github.com/AloveIs/signing-device-service-go/domain"
+	"github.com/AloveIs/signing-device-service-go/persistence"
 )
 
 // Helper struct to break down and validate signature components

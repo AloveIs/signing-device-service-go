@@ -1,6 +1,6 @@
 package persistence
 
-import "github.com/fiskaly/coding-challenges/signing-service-challenge/common"
+import "github.com/AloveIs/signing-device-service-go/common"
 
 type SignatureRepository interface {
 	// SaveSignature stores a signature in the repository

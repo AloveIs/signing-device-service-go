@@ -1,8 +1,10 @@
 package domain
 
 import (
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"errors"
+
+	"github.com/AloveIs/signing-device-service-go/common"
+	"github.com/AloveIs/signing-device-service-go/persistence"
 )
 
 type SignatureService struct {
@@ -16,33 +18,27 @@ func NewSignatureService(repository persistence.SignatureRepository) *SignatureS
 }
 
 func (s *SignatureService) GetSignatureByID(signatureID string) (common.Signature, error) {
-	signature, err := s.repo.GetSignatureByID(signatureID)
+	signatureDTO, err := s.repo.GetSignatureByID(signatureID)
+	if errors.Is(err, persistence.ErrNotFound) {
+		return common.Signature{}, ErrSignatureNotFound
+	}
+
 	if err != nil {
 		return common.Signature{}, err
 	}
 
-	return common.Signature{
-		ID:         signature.ID,
-		DeviceID:   signature.DeviceID,
-		Signature:  signature.Signature,
-		SignedData: signature.SignedData,
-	}, nil
+	return signatureDTO.ToSignature(), nil
 }
 
 func (s *SignatureService) ListSignatures() ([]common.Signature, error) {
-	signatures, err := s.repo.ListSignatures()
+	signaturesDTOs, err := s.repo.ListSignatures()
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]common.Signature, len(signatures))
-	for i, sig := range signatures {
-		result[i] = common.Signature{
-			ID:         sig.ID,
-			DeviceID:   sig.DeviceID,
-			Signature:  sig.Signature,
-			SignedData: sig.SignedData,
-		}
+	result := make([]common.Signature, len(signaturesDTOs))
+	for i, sigDTO := range signaturesDTOs {
+		result[i] = sigDTO.ToSignature()
 	}
 	return result, nil
 }

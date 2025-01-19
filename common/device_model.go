@@ -1,7 +1,7 @@
 package common
 
-// Data representing a Device that can be serialized to
-// external services
+// Data representing a signature device.
+// It is meant to be serialized toe xternal services
 type Device struct {
 	ID        string  `json:"id"`
 	Algorithm string  `json:"algorithm"`
@@ -10,7 +10,7 @@ type Device struct {
 	PublicKey string `json:"-"`
 }
 
-// DTO for the device for communicating with the persistence layer
+// DeviceDTO for the device for communicating with the persistence layer
 type DeviceDTO struct {
 	ID               string
 	Label            *string

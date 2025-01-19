@@ -2,8 +2,10 @@ package crypto
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 )
 
 // ECCKeyPair is a DTO that holds ECC private and public keys.
@@ -12,29 +14,23 @@ type ECCKeyPair struct {
 	Private *ecdsa.PrivateKey
 }
 
-// ECCMarshaler can encode and decode an ECC key pair.
-type ECCMarshaler struct{}
+// Sign data with the key
+func (keys *ECCKeyPair) Sign(dataToBeSigned []byte) ([]byte, error) {
+	hash := computeHash(dataToBeSigned)
 
-type ECCSigner struct {
-	*ECCMarshaler
-	*ECCKeyPair
+	signature, err := ecdsa.SignASN1(rand.Reader, keys.Private, hash[:])
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to sign data with ECC: %v", err)
+	}
+	return signature, nil
 }
 
-func (s *ECCSigner) GetAlgorithm() string {
+func (s *ECCKeyPair) GetAlgorithm() string {
 	return AlgoECDSA
 }
 
-func (s *ECCSigner) PublicKey() string {
-	public, _, err := s.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return string(public)
-}
-
-func (s *ECCSigner) Marshal() ([]byte, []byte, error) {
-	return s.ECCMarshaler.Marshal(*s.ECCKeyPair)
-}
+// ECCMarshaler can encode and decode an ECC key pair.
+type ECCMarshaler struct{}
 
 // NewECCMarshaler creates a new ECCMarshaler.
 func NewECCMarshaler() ECCMarshaler {

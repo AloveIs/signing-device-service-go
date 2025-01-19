@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"github.com/AloveIs/signing-device-service-go/api"
+	"github.com/AloveIs/signing-device-service-go/domain"
+	"github.com/AloveIs/signing-device-service-go/persistence"
 )
 
 const (

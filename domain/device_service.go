@@ -3,8 +3,8 @@ package domain
 import (
 	"errors"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
+	"github.com/AloveIs/signing-device-service-go/common"
+	"github.com/AloveIs/signing-device-service-go/persistence"
 	"github.com/google/uuid"
 )
 
@@ -31,7 +31,7 @@ func (s *DeviceService) CreateDevice(algorithm string, label *string) (common.De
 	if err != nil {
 		return common.Device{}, err
 	}
-	err = s.deviceRepo.SaveDevice(device.ToDTO())
+	err = s.deviceRepo.SaveDevice(device.toDTO())
 	if err != nil {
 		return common.Device{}, err
 	}
@@ -83,7 +83,7 @@ func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (
 		if err != nil {
 			return err
 		}
-		signature, signedData, err := device.Sign(message)
+		signature, signedData, err := device.sign(message)
 
 		if err != nil {
 			return err
@@ -103,7 +103,7 @@ func (s *DeviceService) SignMessageWithDevice(deviceID string, message []byte) (
 			return err
 		}
 		// update and device and store it
-		*deviceDTO = device.ToDTO()
+		*deviceDTO = device.toDTO()
 		if err != nil {
 			return err
 		}

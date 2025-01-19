@@ -11,11 +11,6 @@ import (
 // RSAGenerator generates a RSA key pair.
 type RSAGenerator struct{}
 
-type Marshaller interface {
-	Marshall() ([]byte, error)
-	Unmarshall([]byte) error
-}
-
 var ErrUnsupportedAlgorithm = fmt.Errorf("unsupported algorithm")
 
 // Generate generates a new RSAKeyPair.

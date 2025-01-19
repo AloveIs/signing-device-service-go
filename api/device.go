@@ -5,24 +5,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/api/responses"
-	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
+	"github.com/AloveIs/signing-device-service-go/api/responses"
+	"github.com/AloveIs/signing-device-service-go/domain"
 )
 
-// Matches a device identifier without any path segments (deviceID)
-var deviceIDPattern = regexp.MustCompile("^([^/]+)$")
-
-// Matches a device signing endpoint path (deviceID/sign)
-var deviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
-
-// DeviceAPIHandler routes and exposes http requests
-// to the device service.
+// DeviceAPIHandler routes and exposes http requests to the device service.
 type DeviceAPIHandler struct {
 	service *domain.DeviceService
 	Prefix  string
 }
 
-// Create a new DeviceAPIHandler using the service
+// Create a new DeviceAPIHandler using the provided service
 func NewDeviceAPIHandler(service *domain.DeviceService) *DeviceAPIHandler {
 	return &DeviceAPIHandler{
 		service: service,
@@ -30,15 +23,7 @@ func NewDeviceAPIHandler(service *domain.DeviceService) *DeviceAPIHandler {
 	}
 }
 
-func (h *DeviceAPIHandler) SetPathPrefix(prefix string) {
-	h.Prefix = prefix
-}
-
-func (handler *DeviceAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	return handler.RouteRequest(w, r)
-}
-
-// Route the http request to the correct handler.
+// RouteRequest routes an http request to its handler.
 func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Request) error {
 	fullpath := r.URL.Path
 	relative, found := strings.CutPrefix(fullpath, handler.Prefix)
@@ -65,4 +50,18 @@ func (handler *DeviceAPIHandler) RouteRequest(w http.ResponseWriter, r *http.Req
 	default:
 		return responses.UrlNotFoundError()
 	}
+}
+
+// Matches a device identifier without any path segments (deviceID)
+var deviceIDPattern = regexp.MustCompile("^([^/]+)$")
+
+// Matches a device signing endpoint path (deviceID/sign)
+var deviceSigningPattern = regexp.MustCompile("^([^/]+)/sign$")
+
+func (h *DeviceAPIHandler) SetPathPrefix(prefix string) {
+	h.Prefix = prefix
+}
+
+func (handler *DeviceAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	return handler.RouteRequest(w, r)
 }
