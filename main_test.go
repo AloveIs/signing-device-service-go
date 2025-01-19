@@ -11,17 +11,17 @@ import (
 	"github.com/AloveIs/signing-device-service-go/common"
 )
 
-func TestErrorMessages(t *testing.T) {
-
-}
-
 // Perform end-to-end testing performing a sequence of requests mocking the
 // user behaviour. (similar to acceptance testing)
 func TestMain(t *testing.T) {
 	// spin-up an instance of the server
 	// TODO: here the repository should be the real database (I usually use testcontainers)
 	server := configureServer()
-	go server.Run()
+	go func() {
+		if err := server.Run(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	N := 1
 	wg := &sync.WaitGroup{}
 	// emulate N users accessing the API
@@ -44,6 +44,9 @@ func TestMain(t *testing.T) {
 			// test error messages
 			testRetrieveDeviceFailure(t, "IMPOSSIBLE_DEVICE_ID")
 			testRetrieveSignatureFailure(t, "IMPOSSIBLE_DEVICE_ID")
+			// test invalid payloads
+			testSignatureFailure(t, deviceA)
+			testDeviceCreationFailure(t)
 			wg.Done()
 		}()
 	}
@@ -51,7 +54,7 @@ func TestMain(t *testing.T) {
 }
 
 func testListDevices(t *testing.T, expected []common.Device) {
-	resp, err := http.Get("http://localhost:8080/api/v0/devices")
+	resp, err := http.Get("http://localhost:8080/api/v0/devices/")
 	if err != nil {
 		t.Errorf("List devices failed: %v", err)
 	}
@@ -188,7 +191,7 @@ func testSignMessage(t *testing.T, device common.Device) common.Signature {
 // Get the list of signatures and test if the expected length is correct
 // TODO: add test to check the IDs match the created one
 func testListSignatures(t *testing.T, expected []common.Signature) {
-	resp, err := http.Get("http://localhost:8080/api/v0/signatures")
+	resp, err := http.Get("http://localhost:8080/api/v0/signatures/")
 	if err != nil {
 		t.Errorf("List devices failed: %v", err)
 	}
@@ -266,5 +269,81 @@ func testHealthService(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status OK, got %v", resp.StatusCode)
+	}
+}
+
+func testSignatureFailure(t *testing.T, device common.Device) {
+	IMPOSSIBLE_DEVICE_ID := "IMPOSSIBLE_DEVICE_ID"
+	message := "message"
+	isb64 := false
+
+	testCases := []struct {
+		jsonMessage   string
+		expctedStatus int
+	}{
+		{"-", http.StatusBadRequest},
+
+		{"{}", http.StatusUnprocessableEntity},
+		{`{"message": null}`, http.StatusUnprocessableEntity},
+		{`{"message": null, "isBase64": true}`, http.StatusUnprocessableEntity},
+		{`{"message": "abc"}`, http.StatusUnprocessableEntity},
+	}
+
+	// run test cases
+	for _, tc := range testCases {
+
+		// test impossible device id, expected not found
+		resp, err := http.Post("http://localhost:8080/api/v0/devices/"+device.ID+"/sign", "application/json", bytes.NewBuffer([]byte(tc.jsonMessage)))
+		if err != nil {
+			t.Errorf("Create device failed: %v", err)
+		}
+		if resp.StatusCode != tc.expctedStatus {
+			t.Errorf("Expected status %d, got %v", tc.expctedStatus, resp.StatusCode)
+		}
+
+	}
+	inputValues := api.SignMessageRequest{
+		Message:  &message,
+		IsBase64: &isb64,
+	}
+	jsonValue, err := json.Marshal(inputValues)
+	if err != nil {
+		t.Errorf("Failed to marshal values: %v", err)
+	}
+
+	// test impossible device id, expected not found
+	resp, err := http.Post("http://localhost:8080/api/v0/devices/"+IMPOSSIBLE_DEVICE_ID+"/sign", "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		t.Errorf("Create device failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status Created, got %v", resp.StatusCode)
+	}
+}
+
+func testDeviceCreationFailure(t *testing.T) {
+	testCases := []struct {
+		jsonMessage   string
+		expctedStatus int
+	}{
+		{"-", http.StatusBadRequest},
+		{"{}", http.StatusUnprocessableEntity},
+		{`{"algorithm": null}`, http.StatusUnprocessableEntity},
+		{`{"algorithm": "AES", "label": "some-label"}`, http.StatusUnprocessableEntity},
+		{`{"algorithm": "AES", "label": null}`, http.StatusUnprocessableEntity},
+	}
+
+	// run test cases
+	for _, tc := range testCases {
+
+		// test impossible device id, expected not found
+		resp, err := http.Post("http://localhost:8080/api/v0/devices/", "application/json", bytes.NewBuffer([]byte(tc.jsonMessage)))
+		if err != nil {
+			t.Errorf("Create device failed: %v", err)
+		}
+		if resp.StatusCode != tc.expctedStatus {
+			t.Errorf("Expected status %d, got %v", tc.expctedStatus, resp.StatusCode)
+		}
+
 	}
 }

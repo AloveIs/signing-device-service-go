@@ -29,7 +29,7 @@ func newDevice(algorithm string, label *string) (signatureDevice, error) {
 	signer, err := newSigner(algorithm)
 
 	if err != nil {
-		return signatureDevice{}, fmt.Errorf("invalid algorithm value")
+		return signatureDevice{}, err
 	}
 	return signatureDevice{
 		ID:               generateDeviceId(),

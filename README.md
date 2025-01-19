@@ -16,13 +16,13 @@ Here are the implemented endpoints grouped by their usage.
 ### Device Management
 | Method | Endpoint                        | Description                    |
 |--------|---------------------------------|--------------------------------|
-| GET    | `/api/v0/devices`               | List all registered devices    |
+| GET    | `/api/v0/devices/`               | List all registered devices    |
 
 
 <details>
 <summary>Show example</summary>
 
-`curl 'http://localhost:8080/api/v0/devices'`
+`curl 'http://localhost:8080/api/v0/devices/'`
 
 ```json
 {
@@ -51,7 +51,7 @@ Here are the implemented endpoints grouped by their usage.
   "data": {
     "id": "73771234-55ec-4540-92c4-f09eee812f07",
     "algorithm": "RSA",
-    "label": "Ciao"
+    "label": "my-label"
   }
 }
 ```
@@ -117,13 +117,13 @@ curl -X POST 'http://localhost:8080/api/v0/devices/e770900e-004e-4a59-9e99-b3881
 
 | Method | Endpoint                        | Description                    |
 |--------|---------------------------------|--------------------------------|
-| GET    | `/api/v0/signatures`               | List all created signatures    |
+| GET    | `/api/v0/signatures/`               | List all created signatures    |
 
 
 <details>
 <summary>Show example</summary>
 
-`curl 'http://localhost:8080/api/v0/signatures'`
+`curl 'http://localhost:8080/api/v0/signatures/'`
 
 ```json
 {

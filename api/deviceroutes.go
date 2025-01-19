@@ -68,11 +68,8 @@ func (handler *DeviceAPIHandler) Create(w http.ResponseWriter, r *http.Request) 
 	}
 
 	device, err := handler.service.CreateDevice(req.Algorithm, req.Label)
-
-	var validationErr *domain.ValidationError = &domain.ValidationError{}
-
-	if errors.As(err, validationErr) {
-		return responses.NewAPIError(http.StatusBadRequest, validationErr.Errors)
+	if validationErr, ok := err.(*domain.ValidationError); ok {
+		return responses.InvalidRequestData(validationErr.Errors)
 	} else if err != nil {
 		return err
 	}

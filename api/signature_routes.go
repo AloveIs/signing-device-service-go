@@ -48,7 +48,7 @@ func (handler *SignatureAPIHandler) RouteRequest(w http.ResponseWriter, r *http.
 func (handler *SignatureAPIHandler) Retrieve(signatureID string, w http.ResponseWriter, r *http.Request) error {
 	signature, err := handler.service.GetSignatureByID(signatureID)
 	if err != nil && errors.Is(err, domain.ErrSignatureNotFound) {
-		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("device %s not found", signatureID))
+		return responses.NewAPIError(http.StatusNotFound, fmt.Sprintf("signature %s not found", signatureID))
 	} else if err != nil {
 		return err
 	}

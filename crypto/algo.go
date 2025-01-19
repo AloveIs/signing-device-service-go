@@ -4,7 +4,7 @@ import "crypto/sha256"
 
 const (
 	AlgoRSA   = "RSA"
-	AlgoECDSA = "ECDSA"
+	AlgoECDSA = "ECC"
 )
 
 // computeHash calculates the SHA-256 hash of the input data

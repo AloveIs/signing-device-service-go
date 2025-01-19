@@ -32,6 +32,6 @@ func newSigner(algorithm string) (crypto.MarshallableSigner, error) {
 	case crypto.AlgoECDSA:
 		return crypto.NewECDSASigner()
 	default:
-		return nil, ErrInvalidAlgorithm
+		return nil, NewValidationError([]string{ErrInvalidAlgorithm.Error()})
 	}
 }
