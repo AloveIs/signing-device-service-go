@@ -89,7 +89,8 @@ curl -X POST 'http://localhost:8080/api/v0/devices/' \
 |--------|---------------------------------|--------------------------------|
 | POST   | `/api/v0/devices/{deviceID}/sign`| Sign a message using device   |
 
-
+<details>
+<summary>Show example</summary>
 ```bash
 curl -X POST 'http://localhost:8080/api/v0/devices/e770900e-004e-4a59-9e99-b388184e0c3f/sign' \
 --header 'Content-Type: application/json' \
@@ -109,6 +110,7 @@ curl -X POST 'http://localhost:8080/api/v0/devices/e770900e-004e-4a59-9e99-b3881
   }
 }
 ```
+</details>
 
 ### Signature Management
 

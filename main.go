@@ -21,7 +21,7 @@ func main() {
 
 func configureServer() *api.Server {
 	// create the repositories (database)
-	deviceRepo := persistence.NewInMmemoryDb()
+	deviceRepo := persistence.NewInMemoryDeviceDb()
 	signatureRepo := persistence.NewInMemorySignatureDb()
 
 	// configure services (business logic)

@@ -6,8 +6,8 @@ import (
 )
 
 // TODO: make this its own struct to be consistent
-var ErrDeviceNotFound = errors.New("Device not found")
-var ErrSignatureNotFound = errors.New("Signature not found")
+var ErrDeviceNotFound = errors.New("device not found")
+var ErrSignatureNotFound = errors.New("signature not found")
 
 type ValidationError struct {
 	Errors []string

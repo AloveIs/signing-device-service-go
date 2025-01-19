@@ -7,7 +7,7 @@ import (
 // DeviceRepository handles CRUD operations for devices
 type DeviceRepository interface {
 	// CreateDevice adds a new device to the repository
-	CreateDevice(device common.DeviceDTO) error
+	SaveDevice(device common.DeviceDTO) error
 
 	// GetDeviceByID fetches a device by ID
 	// Returns ErrDeviceNotFound if the device is not found

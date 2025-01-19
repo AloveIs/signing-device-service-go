@@ -31,7 +31,7 @@ func (s *DeviceService) CreateDevice(algorithm string, label *string) (common.De
 	if err != nil {
 		return common.Device{}, err
 	}
-	err = s.deviceRepo.CreateDevice(device.ToDTO())
+	err = s.deviceRepo.SaveDevice(device.ToDTO())
 	if err != nil {
 		return common.Device{}, err
 	}

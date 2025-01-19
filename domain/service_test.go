@@ -22,7 +22,7 @@ type signatureDestructed struct {
 
 // createTestServiceInstance creates a new in-memory database and device service for testing
 func createTestServiceInstance() *domain.DeviceService {
-	deviceDb := persistence.NewInMmemoryDb()
+	deviceDb := persistence.NewInMemoryDeviceDb()
 	signatureDb := persistence.NewInMemorySignatureDb()
 	return domain.NewDeviceService(deviceDb, signatureDb)
 }

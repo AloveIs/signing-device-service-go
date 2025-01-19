@@ -131,6 +131,6 @@ func (handler *DeviceAPIHandler) Sign(deviceID string, w http.ResponseWriter, r 
 		return err
 	}
 
-	WriteAPIResponse(w, http.StatusOK, digest)
+	WriteAPIResponse(w, http.StatusCreated, digest)
 	return nil
 }

@@ -1,20 +1,19 @@
 package persistence
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/common"
 )
 
-type InMmemoryDb struct {
+type InMemoryDeviceDb struct {
 	// RWMutex to emulate atomicity of the database
 	rwmutex sync.RWMutex
 	// Storage method is a map deviceID:device
 	db map[string]common.DeviceDTO
 }
 
-func (imdb *InMmemoryDb) GetDeviceByID(deviceID string) (common.DeviceDTO, error) {
+func (imdb *InMemoryDeviceDb) GetDeviceByID(deviceID string) (common.DeviceDTO, error) {
 
 	imdb.rwmutex.RLock()
 	defer imdb.rwmutex.RUnlock()
@@ -26,20 +25,20 @@ func (imdb *InMmemoryDb) GetDeviceByID(deviceID string) (common.DeviceDTO, error
 	return val, nil
 }
 
-func (imdb *InMmemoryDb) CreateDevice(device common.DeviceDTO) error {
+func (imdb *InMemoryDeviceDb) SaveDevice(device common.DeviceDTO) error {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 	deviceID := device.ID
 	// Check key collision
 	_, has := imdb.db[deviceID]
 	if has {
-		return fmt.Errorf("invaid device, a device with the same ID found.")
+		return ErrIdKeyCollision
 	}
 	imdb.db[deviceID] = device
 	return nil
 }
 
-func (imdb *InMmemoryDb) UpdateDevice(key string, val common.DeviceDTO) (common.DeviceDTO, error) {
+func (imdb *InMemoryDeviceDb) UpdateDevice(key string, val common.DeviceDTO) (common.DeviceDTO, error) {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
@@ -52,7 +51,7 @@ func (imdb *InMmemoryDb) UpdateDevice(key string, val common.DeviceDTO) (common.
 	return prev_val, nil
 }
 
-func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn func(device *common.DeviceDTO) error) error {
+func (imdb *InMemoryDeviceDb) TransactionalUpdateDevice(deviceID string, updateFn func(device *common.DeviceDTO) error) error {
 	imdb.rwmutex.Lock()
 	defer imdb.rwmutex.Unlock()
 
@@ -69,7 +68,7 @@ func (imdb *InMmemoryDb) TransactionalUpdateDevice(deviceID string, updateFn fun
 	return nil
 }
 
-func (imdb *InMmemoryDb) ListDevices() ([]common.DeviceDTO, error) {
+func (imdb *InMemoryDeviceDb) ListDevices() ([]common.DeviceDTO, error) {
 	imdb.rwmutex.RLock()
 	defer imdb.rwmutex.RUnlock()
 
@@ -82,8 +81,8 @@ func (imdb *InMmemoryDb) ListDevices() ([]common.DeviceDTO, error) {
 	return result, nil
 }
 
-func NewInMmemoryDb() DeviceRepository {
-	return &InMmemoryDb{
+func NewInMemoryDeviceDb() DeviceRepository {
+	return &InMemoryDeviceDb{
 		db: make(map[string]common.DeviceDTO),
 	}
 }
